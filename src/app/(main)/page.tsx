@@ -1,16 +1,4 @@
-import {
-  Bot,
-  Heart,
-  MapPin,
-  ShoppingBag,
-  Sparkles,
-  Sun,
-} from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { CardContent } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
-import { careLogItems, mochiPortrait } from "@/lib/pet-data";
+import { Bot, Heart, MapPin, ShoppingBag, Sparkles, Sun } from "lucide-react";
 import {
   AnimatedList,
   FadeContent,
@@ -19,10 +7,15 @@ import {
   SpotlightCard,
 } from "@/components/pet-care/primitives";
 import { PetCareShell } from "@/components/pet-care/shell";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+import { CardContent } from "@/components/ui/card";
+import { careLogItems, mochiPortrait } from "@/lib/pet-data";
+import { cn } from "@/lib/utils";
 
 function Dashboard() {
   return (
-    <main className="min-h-screen bg-background px-5 pt-8 pb-12 md:ml-64 md:px-12">
+    <main className="min-h-0 flex-1 bg-background px-5 pt-8 pb-12 md:px-12">
       <section className="mx-auto max-w-6xl">
         <FadeContent className="mb-10">
           <h2 className="text-4xl font-semibold tracking-tight text-foreground md:text-5xl">

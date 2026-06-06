@@ -157,8 +157,8 @@ export default function AssistantPage() {
 
   return (
     <PetCareShell active="assistant">
-      <main className="grid min-h-screen bg-[#f8f9fa] md:ml-64 lg:grid-cols-[1fr_320px]">
-        <section className="relative flex h-screen flex-col overflow-hidden bg-[radial-gradient(#dac0c3_1px,transparent_1px)] [background-size:34px_34px]">
+      <main className="grid min-h-0 flex-1 bg-background lg:grid-cols-[1fr_320px]">
+        <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(#dac0c3_1px,transparent_1px)] [background-size:34px_34px]">
           <div className="mx-auto mt-4 flex w-full max-w-4xl flex-col items-center gap-3 px-4 sm:flex-row sm:justify-center">
             <AgentSelector agentId={agentId} onAgentChange={setAgentId} />
           </div>
@@ -500,7 +500,7 @@ function ContextSidebar({
   const agent = ASSISTANT_AGENTS.find((a) => a.id === activeAgentId);
 
   return (
-    <aside className="hidden border-l border-[#dac0c3]/40 bg-white px-8 py-8 lg:block">
+    <aside className="hidden min-h-0 overflow-y-auto border-l border-[#dac0c3]/40 bg-white px-8 py-8 lg:block">
       <h3 className="mb-4 flex items-center gap-3 text-sm font-bold tracking-wide text-[#554244]">
         <Info className="size-5" />
         {activeAgentId === "meme" ? "Meme agent" : "AI context sources"}

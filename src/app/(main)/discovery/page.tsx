@@ -9,18 +9,18 @@ import {
   Star,
   Tag,
 } from "lucide-react";
+import { Pill, SpotlightCard } from "@/components/pet-care/primitives";
+import { PetCareShell } from "@/components/pet-care/shell";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
 import {
   discoveryFilters,
   groomerInterior,
   mochiPortrait,
 } from "@/lib/pet-data";
-import { Pill, SpotlightCard } from "@/components/pet-care/primitives";
-import { PetCareShell } from "@/components/pet-care/shell";
+import { cn } from "@/lib/utils";
 
 const listings = [
   {
@@ -41,7 +41,7 @@ const listings = [
 
 function ListPanel() {
   return (
-    <section className="z-10 flex w-full flex-col border-r border-border bg-card shadow-sm md:h-screen md:w-[500px]">
+    <section className="z-10 flex min-h-0 w-full flex-col border-r border-border bg-card shadow-sm md:h-full md:w-[500px] md:shrink-0">
       <div className="border-b border-border p-5 md:p-8">
         <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-4xl">
           Local discovery
@@ -84,7 +84,9 @@ function MochiFilterBar() {
         <AvatarFallback>M</AvatarFallback>
       </Avatar>
       <div>
-        <p className="text-sm font-semibold text-foreground">Top picks for Mochi</p>
+        <p className="text-sm font-semibold text-foreground">
+          Top picks for Mochi
+        </p>
         <p className="text-xs text-muted-foreground">
           Filtered for sensitive skin expertise
         </p>
@@ -130,9 +132,7 @@ function ListingCard({
 }: (typeof listings)[number]) {
   return (
     <SpotlightCard
-      className={cn(
-        selected && "bg-gradient-to-r from-card to-primary/5",
-      )}
+      className={cn(selected && "bg-gradient-to-r from-card to-primary/5")}
     >
       <CardContent className="flex gap-5 p-4">
         <div className="relative">
@@ -195,7 +195,7 @@ function SpecialOfferBanner() {
 
 function MapPanel() {
   return (
-    <section className="relative h-[520px] flex-1 overflow-hidden bg-gradient-to-br from-chart-3/40 via-chart-2/30 to-primary/20 md:h-screen dark:from-chart-3/20 dark:via-chart-2/15 dark:to-primary/10">
+    <section className="relative h-[520px] min-h-0 flex-1 overflow-hidden bg-gradient-to-br from-chart-3/40 via-chart-2/30 to-primary/20 md:h-full dark:from-chart-3/20 dark:via-chart-2/15 dark:to-primary/10">
       <div className="absolute inset-0 opacity-40 [background-image:linear-gradient(35deg,transparent_49%,color-mix(in_oklch,var(--card),transparent_60%)_50%,transparent_51%),linear-gradient(118deg,transparent_49%,color-mix(in_oklch,var(--card),transparent_60%)_50%,transparent_51%),linear-gradient(90deg,transparent_49%,color-mix(in_oklch,var(--card),transparent_60%)_50%,transparent_51%)] [background-size:140px_110px,190px_160px,86px_86px]" />
       <Button
         className="absolute top-8 left-1/2 z-10 -translate-x-1/2 rounded-full shadow-lg"
@@ -205,7 +205,11 @@ function MapPanel() {
         Search this area
       </Button>
       <div className="absolute top-6 right-5 z-10 grid gap-3">
-        <Button className="size-12 rounded-full shadow-md" size="icon" variant="secondary">
+        <Button
+          className="size-12 rounded-full shadow-md"
+          size="icon"
+          variant="secondary"
+        >
           <Cross className="size-6" />
         </Button>
         <div className="grid overflow-hidden rounded-full border border-border bg-card shadow-md">
@@ -242,7 +246,7 @@ function MapPanel() {
 export default function DiscoveryPage() {
   return (
     <PetCareShell active="discovery">
-      <main className="flex min-h-screen flex-col bg-background md:ml-64 md:flex-row">
+      <main className="flex min-h-0 flex-1 flex-col bg-background md:flex-row">
         <ListPanel />
         <MapPanel />
       </main>

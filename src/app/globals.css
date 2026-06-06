@@ -6,8 +6,11 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  /* Little Lovely Pets: Inter body, Quicksand display (see layout.tsx font variables) */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono);
+  --font-llp-display:
+    var(--font-quicksand), ui-sans-serif, system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -48,7 +51,34 @@
 
 :root {
   --radius: 0.75rem;
-  --font-brand: var(--font-geist-sans);
+  --font-brand: var(--font-quicksand), ui-sans-serif, system-ui, sans-serif;
+  /* Little Lovely Pets — "Modern Warmth" (design handoff tokens, hex-aligned) */
+  --primary-bright: #ff8da1;
+  --primary-container: #ffe1e6;
+  --on-primary-container: #782338;
+  --llp-secondary: #7a5b00;
+  --llp-secondary-container: #ffe49b;
+  --llp-on-secondary-container: #5b4300;
+  --llp-tertiary: #3a4f73;
+  --llp-tertiary-container: #dbe6ff;
+  --llp-on-tertiary-container: #26395c;
+  --llp-success: #1f8a5b;
+  --llp-success-container: #cdeedd;
+  --llp-error: #ba1a1a;
+  --llp-error-container: #ffdad6;
+  --llp-bg: #f7f6f7;
+  --llp-surface: #ffffff;
+  --llp-surface-2: #f3f1f2;
+  --llp-surface-3: #ece9ea;
+  --llp-ink: #191417;
+  --llp-ink-2: #5b4f53;
+  --llp-ink-3: #8d8186;
+  --llp-outline: #e4dcdf;
+  --llp-outline-2: #d9ced2;
+  --llp-sh-1: 0 4px 20px rgba(40, 28, 33, 0.05);
+  --llp-sh-2: 0 10px 34px rgba(40, 28, 33, 0.1);
+  --llp-sh-pop: 0 16px 44px rgba(120, 35, 56, 0.18);
+  --app-sidebar-width: 248px;
   /* Warm neutral canvas, soft rose primary — minimal & modern */
   --background: oklch(0.985 0.006 95);
   --foreground: oklch(0.22 0.02 280);
@@ -123,6 +153,80 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Design handoff: warm scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--llp-outline-2);
+    border-radius: 999px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--llp-ink-3);
+    background-clip: content-box;
+  }
+}
+
+/* Little Lovely Pets — shared motion (prefers-reduced-motion respected) */
+@keyframes llp-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes llp-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes llp-float-y {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+@keyframes llp-blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  96% {
+    transform: scaleY(0.1);
+  }
+}
+
+.llp-card-in {
+  animation: llp-card-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.font-llp-display {
+  font-family: var(--font-llp-display);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .llp-card-in {
+    animation: none;
   }
 }
 
