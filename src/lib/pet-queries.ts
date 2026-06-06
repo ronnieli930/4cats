@@ -1,8 +1,12 @@
 import "server-only";
 
+import { cookies } from "next/headers";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
+
+/** Cookie holding the user's currently-selected pet id (multi-pet switching). */
+export const ACTIVE_PET_COOKIE = "llp_active_pet";
 
 type PetRow = {
   id: string;
@@ -80,9 +84,19 @@ export type PetDTO = {
   careLogs: PetCareLogDTO[];
 };
 
+export type PetSummary = {
+  id: string;
+  name: string;
+  species: string;
+  photoUrl: string | null;
+};
+
 export type PetCareContext = {
   userDisplayName: string;
+  /** The active pet (cookie-selected, else the first). */
   pet: PetDTO | null;
+  /** Lightweight list of all the user's pets, for the switcher. */
+  pets: PetSummary[];
 };
 
 function displayNameFromUser(user: {
@@ -107,14 +121,30 @@ export const getPetCareContext = cache(async (): Promise<PetCareContext> => {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
-    return { userDisplayName: "there", pet: null };
+    return { userDisplayName: "there", pet: null, pets: [] };
   }
 
   const userDisplayName = displayNameFromUser(user);
 
-  const row = await prisma.pet.findFirst({
+  const summaries = await prisma.pet.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "asc" },
+    select: { id: true, name: true, species: true, photoUrl: true },
+  });
+  if (summaries.length === 0) {
+    return { userDisplayName, pet: null, pets: [] };
+  }
+
+  // Active pet = cookie selection (if it still belongs to the user), else first.
+  const cookieStore = await cookies();
+  const cookieId = cookieStore.get(ACTIVE_PET_COOKIE)?.value;
+  const activeId =
+    cookieId && summaries.some((p) => p.id === cookieId)
+      ? cookieId
+      : summaries[0].id;
+
+  const row = await prisma.pet.findFirst({
+    where: { id: activeId, userId: user.id },
     include: {
       careLogs: {
         orderBy: { loggedAt: "desc" },
@@ -123,11 +153,7 @@ export const getPetCareContext = cache(async (): Promise<PetCareContext> => {
     },
   });
 
-  if (!row) {
-    return { userDisplayName, pet: null };
-  }
-
-  return { userDisplayName, pet: mapPet(row) };
+  return { userDisplayName, pet: row ? mapPet(row) : null, pets: summaries };
 });
 
 /** All pets for the signed-in user (for the multi-pet Profiles screen). */

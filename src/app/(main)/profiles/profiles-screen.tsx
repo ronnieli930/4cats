@@ -12,7 +12,8 @@ import {
   Verified,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { setActivePet } from "@/app/(main)/active-pet-actions";
 import { Mascot, type MascotSpecies } from "@/components/pet-care/mascot";
 import {
   Dialog,
@@ -190,13 +191,29 @@ function PetMiniCard({
   );
 }
 
-export function ProfilesScreen({ pets }: { pets: PetDTO[] }) {
-  const [activeId, setActiveId] = useState(pets[0]?.id ?? "");
+export function ProfilesScreen({
+  pets,
+  activePetId,
+}: {
+  pets: PetDTO[];
+  activePetId: string | null;
+}) {
+  const [activeId, setActiveId] = useState(activePetId ?? pets[0]?.id ?? "");
   const [editOpen, setEditOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [, startTransition] = useTransition();
 
   const active = pets.find((p) => p.id === activeId) ?? pets[0];
   if (!active) return null;
+
+  // Selecting a pet shows its detail AND makes it the active pet everywhere
+  // (dashboard, discovery, assistant, sidebar/top-bar) via the cookie.
+  function selectPet(id: string) {
+    setActiveId(id);
+    startTransition(() => {
+      void setActivePet(id);
+    });
+  }
 
   const ageLabel =
     active.ageYears != null
@@ -235,7 +252,7 @@ export function ProfilesScreen({ pets }: { pets: PetDTO[] }) {
               key={p.id}
               pet={p}
               active={p.id === active.id}
-              onSelect={() => setActiveId(p.id)}
+              onSelect={() => selectPet(p.id)}
             />
           ))}
           <button

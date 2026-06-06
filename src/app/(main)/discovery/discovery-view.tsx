@@ -4,6 +4,7 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
+  Coffee,
   Cross,
   ExternalLink,
   Globe,
@@ -15,6 +16,7 @@ import {
   Search,
   ShoppingBag,
   Star,
+  Store,
   Utensils,
   X,
 } from "lucide-react";
@@ -44,7 +46,7 @@ const DiscoveryMap = dynamic(() => import("./discovery-map"), {
   ),
 });
 
-type Tab = "groomer" | "vet" | "food";
+type Tab = "groomer" | "vet" | "pet_store" | "cafe" | "food";
 type PetSummary = {
   name: string;
   species: string;
@@ -54,14 +56,38 @@ type PetSummary = {
 const TABS: { id: Tab; label: string; icon: typeof Scissors }[] = [
   { id: "groomer", label: "Groomers", icon: Scissors },
   { id: "vet", label: "Vets", icon: Cross },
+  { id: "pet_store", label: "Pet stores", icon: Store },
+  { id: "cafe", label: "Cafes", icon: Coffee },
   { id: "food", label: "Food", icon: ShoppingBag },
 ];
 
 const PAGE_SIZE: Record<Tab, number> = {
   groomer: 30,
   vet: 30,
+  pet_store: 30,
+  cafe: 30,
   food: 30,
 };
+
+// Places list backing each (non-food) tab.
+function placesForTab(data: DiscoveryData, tab: Tab): PlaceDTO[] {
+  if (tab === "vet") return data.vets;
+  if (tab === "pet_store") return data.petStores;
+  if (tab === "cafe") return data.cafes;
+  return data.groomers;
+}
+
+function tabCount(data: DiscoveryData, tab: Tab): number {
+  if (tab === "food") return data.food.length;
+  return placesForTab(data, tab).length;
+}
+
+function placeIcon(kind: string): typeof Scissors {
+  if (kind === "vet") return Cross;
+  if (kind === "pet_store") return Store;
+  if (kind === "cafe") return Coffee;
+  return Scissors;
+}
 
 const DEFAULT_RADIUS_KM = 8;
 const MIN_RADIUS_KM = 2;
@@ -124,7 +150,7 @@ export function DiscoveryView({
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const isFood = tab === "food";
-  const places = tab === "vet" ? data.vets : data.groomers;
+  const places = placesForTab(data, tab);
   const q = query.trim().toLowerCase();
 
   const filteredPlaces = useMemo(() => {
@@ -251,10 +277,7 @@ export function DiscoveryView({
           <div className="mt-4 flex flex-wrap gap-2">
             {TABS.map((t) => {
               const Icon = t.icon;
-              const count =
-                t.id === "food"
-                  ? data.food.length
-                  : (t.id === "vet" ? data.vets : data.groomers).length;
+              const count = tabCount(data, t.id);
               const activeTab = tab === t.id;
               return (
                 <button
@@ -390,7 +413,7 @@ function ListingCard({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const Icon = place.kind === "vet" ? Cross : Scissors;
+  const Icon = placeIcon(place.kind);
   const rating = ratingLabel(place);
   return (
     <button

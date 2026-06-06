@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { resolvePostalToLatLng } from "@/lib/pet-data/search";
 import type { PetDTO } from "@/lib/pet-queries";
 
-export type ServiceKind = "groomer" | "vet";
+export type ServiceKind = "groomer" | "vet" | "pet_store" | "cafe";
 
 export type PlaceReviewDTO = {
   rating: number | null;
@@ -288,19 +288,23 @@ export type DiscoveryData = {
   origin: DiscoveryOrigin;
   groomers: PlaceDTO[];
   vets: PlaceDTO[];
+  petStores: PlaceDTO[];
+  cafes: PlaceDTO[];
   food: ProductDTO[];
 };
 
-/** Groomers, vets, and food near/for the pet — the discovery screen. */
+/** Groomers, vets, pet stores, cafes, and food near/for the pet. */
 export const getDiscoveryData = cache(
   async (pet: PetDTO): Promise<DiscoveryData> => {
     const origin = await originForPet(pet);
-    const [groomers, vets, food] = await Promise.all([
+    const [groomers, vets, petStores, cafes, food] = await Promise.all([
       getPlaces("groomer", origin),
       getPlaces("vet", origin),
+      getPlaces("pet_store", origin),
+      getPlaces("cafe", origin),
       getFoodForPet(pet),
     ]);
-    return { origin, groomers, vets, food };
+    return { origin, groomers, vets, petStores, cafes, food };
   },
 );
 

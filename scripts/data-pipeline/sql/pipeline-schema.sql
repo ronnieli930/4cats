@@ -119,7 +119,7 @@ create table if not exists public.service_places (
   id uuid primary key default gen_random_uuid(),
   source text not null default 'google_places',
   source_place_id text not null,
-  kind text not null check (kind in ('groomer', 'vet', 'pet_store', 'other')),
+  kind text not null check (kind in ('groomer', 'vet', 'pet_store', 'cafe', 'other')),
   name text not null,
   formatted_address text,
   postal_code text,
@@ -147,6 +147,13 @@ create table if not exists public.service_places (
   updated_at timestamptz not null default now(),
   unique (source, source_place_id)
 );
+
+-- Keep the kind CHECK in sync on existing DBs (adds 'cafe' to older installs).
+alter table public.service_places
+  drop constraint if exists service_places_kind_check;
+alter table public.service_places
+  add constraint service_places_kind_check
+  check (kind in ('groomer', 'vet', 'pet_store', 'cafe', 'other'));
 
 create index if not exists service_places_kind_rating_idx
 on public.service_places(kind, rating desc nulls last, user_rating_count desc nulls last);

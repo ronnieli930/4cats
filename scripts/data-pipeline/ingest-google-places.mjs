@@ -80,6 +80,28 @@ const QUERY_SETS = {
       ...SG_REGIONS.map((r) => `vet clinic ${r}`),
     ],
   },
+  pet_store: {
+    target: 70,
+    includedType: "pet_store",
+    queries: [
+      "pet store",
+      "pet shop",
+      "pet supplies store",
+      "aquarium fish shop",
+      ...SG_REGIONS.map((r) => `pet store ${r}`),
+    ],
+  },
+  cafe: {
+    target: 45,
+    queries: [
+      "dog cafe",
+      "cat cafe",
+      "pet cafe",
+      "pet friendly cafe",
+      "pet friendly restaurant",
+      ...SG_REGIONS.slice(0, 12).map((r) => `pet friendly cafe ${r}`),
+    ],
+  },
 };
 
 function parseArgs(argv) {

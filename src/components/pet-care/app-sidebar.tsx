@@ -4,12 +4,11 @@ import { CalendarDays, HelpCircle, Settings } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { ModeToggle } from "@/components/mode-toggle";
-import { usePetCare } from "@/components/pet-care/pet-care-provider";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { navItems, petPlaceholderImage } from "@/lib/pet-data";
+import { navItems } from "@/lib/pet-data";
 import { cn } from "@/lib/utils";
 import { BrandMascot } from "./mascot";
+import { PetSwitcher } from "./pet-switcher";
 import { SignOutButton } from "./sign-out-button";
 
 function SidebarGrip({
@@ -37,24 +36,6 @@ function SidebarGrip({
   );
 }
 
-function petSubtitle(pet: {
-  breed: string | null;
-  species: string;
-  locationLabel: string | null;
-  locationPostalCode: string | null;
-}) {
-  const kind =
-    pet.breed?.trim() ||
-    (pet.species.toLowerCase() === "dog"
-      ? "Dog"
-      : pet.species.toLowerCase() === "cat"
-        ? "Cat"
-        : pet.species);
-  const place =
-    pet.locationLabel?.trim() || pet.locationPostalCode?.trim() || "Singapore";
-  return `${kind} · ${place}`;
-}
-
 export function SidebarContent({
   active,
   onNavigate,
@@ -64,9 +45,6 @@ export function SidebarContent({
   onNavigate?: () => void;
   variant?: "rail" | "drawer";
 }) {
-  const { pet } = usePetCare();
-  const avatarSrc = pet ? petPlaceholderImage(pet.species) : undefined;
-
   return (
     <>
       <div className="border-b border-sidebar-border pb-4">
@@ -87,25 +65,8 @@ export function SidebarContent({
           </div>
         </div>
 
-        <div className="mx-1 mt-1 flex items-center gap-3 rounded-xl border border-border/60 bg-muted/30 px-2 py-2">
-          <Avatar className="size-10 border-2 border-primary/25">
-            <AvatarImage
-              alt={pet?.name ? `${pet.name} profile` : "Active pet"}
-              className="object-cover"
-              src={avatarSrc}
-            />
-            <AvatarFallback>
-              {pet?.name?.slice(0, 1).toUpperCase() ?? "P"}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1 text-left">
-            <p className="truncate text-sm font-bold text-foreground">
-              {pet?.name ?? "Your pet"}
-            </p>
-            <p className="truncate text-xs text-muted-foreground">
-              {pet ? petSubtitle(pet) : "Add a profile in onboarding"}
-            </p>
-          </div>
+        <div className="mx-1 mt-1">
+          <PetSwitcher variant="sidebar" />
         </div>
       </div>
 
