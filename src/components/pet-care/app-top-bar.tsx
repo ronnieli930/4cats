@@ -1,8 +1,9 @@
 "use client";
 
-import { Bell, Search, UserRound } from "lucide-react";
+import { Search, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { NotificationsBell } from "@/components/pet-care/notifications-bell";
 import { PetSwitcher } from "@/components/pet-care/pet-switcher";
 import { cn } from "@/lib/utils";
 
@@ -51,14 +52,7 @@ export function AppTopBar() {
         >
           <Search className="size-[21px]" />
         </Link>
-        <button
-          type="button"
-          className="relative grid size-10 place-items-center rounded-full bg-muted/80 text-muted-foreground transition-colors hover:bg-muted"
-          aria-label="Notifications"
-        >
-          <Bell className="size-[21px]" />
-          <span className="absolute top-1.5 right-1.5 size-2 rounded-full border-2 border-background bg-primary" />
-        </button>
+        <NotificationsBell />
         <button
           type="button"
           className="grid size-10 place-items-center rounded-full bg-secondary text-secondary-foreground transition-colors hover:opacity-90"

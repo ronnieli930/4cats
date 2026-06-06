@@ -14,8 +14,7 @@ import { Pool } from "pg";
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
 const ONEMAP_AUTH_URL = "https://www.onemap.gov.sg/api/auth/post/getToken";
-const ONEMAP_SEARCH_URL =
-  "https://www.onemap.gov.sg/api/common/elastic/search";
+const ONEMAP_SEARCH_URL = "https://www.onemap.gov.sg/api/common/elastic/search";
 
 type LatLng = { lat: number; lng: number };
 
@@ -91,15 +90,28 @@ export async function searchFood(
 ): Promise<FoodResult[]> {
   const { query, petType, brand, limit = 6 } = opts;
   const embedding = await embedQuery(query);
-  const filter: Record<string, unknown> = { kind: "product" };
-  if (petType) filter.pet_type = petType;
-  if (brand) filter.brand = brand;
 
-  const { rows } = await getPool().query(
-    `select id, entity_id, title, body, metadata, similarity
-       from public.match_knowledge_chunks($1::vector, $2, $3::jsonb)`,
-    [embedding, limit, JSON.stringify(filter)],
-  );
+  const baseFilter: Record<string, unknown> = { kind: "product" };
+  if (petType) baseFilter.pet_type = petType;
+
+  const runQuery = async (filter: Record<string, unknown>) => {
+    const { rows } = await getPool().query(
+      `select id, entity_id, title, body, metadata, similarity
+         from public.match_knowledge_chunks($1::vector, $2, $3::jsonb)`,
+      [embedding, limit, JSON.stringify(filter)],
+    );
+    return rows;
+  };
+
+  // `brand` is an exact JSONB-containment match in match_knowledge_chunks, so a
+  // slightly-off brand string (casing or extra words like "Acana Adult Dog")
+  // would return nothing. Try the brand-filtered query first, then fall back to
+  // a brand-less semantic search — the brand name is already in the embedded
+  // query, so relevant products still rank highly and the agent stays grounded.
+  let rows = await runQuery(brand ? { ...baseFilter, brand } : baseFilter);
+  if (rows.length === 0 && brand) {
+    rows = await runQuery(baseFilter);
+  }
 
   return rows.map((r) => {
     const m = r.metadata ?? {};
@@ -357,9 +369,7 @@ export async function resolvePostalToLatLng(
  * centroids (first 2 digits). This is only for partial postal prefixes and
  * scripts; full app discovery uses resolvePostalToLatLng instead.
  */
-export function postalToLatLng(
-  postalCode: string,
-): LatLng | null {
+export function postalToLatLng(postalCode: string): LatLng | null {
   const digits = postalCode.replace(/\D/g, "");
   if (digits.length < 2) return null;
   const district = digits.slice(0, 2);
@@ -368,45 +378,85 @@ export function postalToLatLng(
 
 // Centroids by 2-digit postal district (approx). Covers the main island.
 const SG_DISTRICT_CENTROIDS: Record<string, LatLng> = {
-  "01": { lat: 1.2833, lng: 103.8517 }, "02": { lat: 1.2792, lng: 103.843 },
-  "03": { lat: 1.2761, lng: 103.834 }, "04": { lat: 1.2649, lng: 103.823 },
-  "05": { lat: 1.2746, lng: 103.79 }, "06": { lat: 1.2901, lng: 103.852 },
-  "07": { lat: 1.2996, lng: 103.857 }, "08": { lat: 1.3088, lng: 103.857 },
-  "09": { lat: 1.3052, lng: 103.832 }, "10": { lat: 1.3104, lng: 103.815 },
-  "11": { lat: 1.3231, lng: 103.815 }, "12": { lat: 1.3257, lng: 103.857 },
-  "13": { lat: 1.3344, lng: 103.882 }, "14": { lat: 1.3196, lng: 103.886 },
-  "15": { lat: 1.3047, lng: 103.905 }, "16": { lat: 1.3236, lng: 103.943 },
-  "17": { lat: 1.3409, lng: 103.961 }, "18": { lat: 1.3526, lng: 103.945 },
-  "19": { lat: 1.3667, lng: 103.892 }, "20": { lat: 1.3565, lng: 103.848 },
-  "21": { lat: 1.3387, lng: 103.776 }, "22": { lat: 1.3329, lng: 103.743 },
-  "23": { lat: 1.3636, lng: 103.764 }, "24": { lat: 1.3771, lng: 103.74 },
-  "25": { lat: 1.3833, lng: 103.745 }, "26": { lat: 1.3795, lng: 103.813 },
-  "27": { lat: 1.4255, lng: 103.835 }, "28": { lat: 1.4019, lng: 103.87 },
-  "29": { lat: 1.3667, lng: 103.892 }, "30": { lat: 1.3142, lng: 103.864 },
-  "31": { lat: 1.3261, lng: 103.871 }, "32": { lat: 1.3296, lng: 103.857 },
-  "33": { lat: 1.3196, lng: 103.886 }, "34": { lat: 1.3196, lng: 103.9 },
-  "35": { lat: 1.31, lng: 103.892 }, "36": { lat: 1.318, lng: 103.886 },
-  "37": { lat: 1.318, lng: 103.892 }, "38": { lat: 1.3104, lng: 103.886 },
-  "39": { lat: 1.3142, lng: 103.892 }, "40": { lat: 1.3047, lng: 103.905 },
-  "41": { lat: 1.3047, lng: 103.9 }, "42": { lat: 1.3047, lng: 103.918 },
-  "43": { lat: 1.3047, lng: 103.918 }, "44": { lat: 1.3104, lng: 103.918 },
-  "45": { lat: 1.3104, lng: 103.93 }, "46": { lat: 1.3329, lng: 103.943 },
-  "47": { lat: 1.3409, lng: 103.943 }, "48": { lat: 1.3409, lng: 103.955 },
-  "49": { lat: 1.3526, lng: 103.945 }, "50": { lat: 1.3526, lng: 103.96 },
-  "51": { lat: 1.3526, lng: 103.96 }, "52": { lat: 1.3496, lng: 103.943 },
-  "53": { lat: 1.3636, lng: 103.892 }, "54": { lat: 1.3636, lng: 103.9 },
-  "55": { lat: 1.3636, lng: 103.87 }, "56": { lat: 1.3565, lng: 103.835 },
-  "57": { lat: 1.3565, lng: 103.825 }, "58": { lat: 1.3142, lng: 103.806 },
-  "59": { lat: 1.3296, lng: 103.806 }, "60": { lat: 1.3387, lng: 103.697 },
-  "61": { lat: 1.3387, lng: 103.71 }, "62": { lat: 1.3387, lng: 103.71 },
-  "63": { lat: 1.3387, lng: 103.71 }, "64": { lat: 1.3387, lng: 103.72 },
-  "65": { lat: 1.3387, lng: 103.74 }, "66": { lat: 1.3387, lng: 103.75 },
-  "67": { lat: 1.3567, lng: 103.75 }, "68": { lat: 1.3567, lng: 103.75 },
-  "69": { lat: 1.3567, lng: 103.69 }, "70": { lat: 1.3567, lng: 103.69 },
-  "71": { lat: 1.3567, lng: 103.69 }, "72": { lat: 1.4019, lng: 103.74 },
-  "73": { lat: 1.4019, lng: 103.74 }, "75": { lat: 1.4498, lng: 103.82 },
-  "76": { lat: 1.4498, lng: 103.82 }, "77": { lat: 1.4255, lng: 103.78 },
-  "78": { lat: 1.4255, lng: 103.78 }, "79": { lat: 1.4255, lng: 103.79 },
-  "80": { lat: 1.3795, lng: 103.9 }, "81": { lat: 1.3565, lng: 103.96 },
+  "01": { lat: 1.2833, lng: 103.8517 },
+  "02": { lat: 1.2792, lng: 103.843 },
+  "03": { lat: 1.2761, lng: 103.834 },
+  "04": { lat: 1.2649, lng: 103.823 },
+  "05": { lat: 1.2746, lng: 103.79 },
+  "06": { lat: 1.2901, lng: 103.852 },
+  "07": { lat: 1.2996, lng: 103.857 },
+  "08": { lat: 1.3088, lng: 103.857 },
+  "09": { lat: 1.3052, lng: 103.832 },
+  "10": { lat: 1.3104, lng: 103.815 },
+  "11": { lat: 1.3231, lng: 103.815 },
+  "12": { lat: 1.3257, lng: 103.857 },
+  "13": { lat: 1.3344, lng: 103.882 },
+  "14": { lat: 1.3196, lng: 103.886 },
+  "15": { lat: 1.3047, lng: 103.905 },
+  "16": { lat: 1.3236, lng: 103.943 },
+  "17": { lat: 1.3409, lng: 103.961 },
+  "18": { lat: 1.3526, lng: 103.945 },
+  "19": { lat: 1.3667, lng: 103.892 },
+  "20": { lat: 1.3565, lng: 103.848 },
+  "21": { lat: 1.3387, lng: 103.776 },
+  "22": { lat: 1.3329, lng: 103.743 },
+  "23": { lat: 1.3636, lng: 103.764 },
+  "24": { lat: 1.3771, lng: 103.74 },
+  "25": { lat: 1.3833, lng: 103.745 },
+  "26": { lat: 1.3795, lng: 103.813 },
+  "27": { lat: 1.4255, lng: 103.835 },
+  "28": { lat: 1.4019, lng: 103.87 },
+  "29": { lat: 1.3667, lng: 103.892 },
+  "30": { lat: 1.3142, lng: 103.864 },
+  "31": { lat: 1.3261, lng: 103.871 },
+  "32": { lat: 1.3296, lng: 103.857 },
+  "33": { lat: 1.3196, lng: 103.886 },
+  "34": { lat: 1.3196, lng: 103.9 },
+  "35": { lat: 1.31, lng: 103.892 },
+  "36": { lat: 1.318, lng: 103.886 },
+  "37": { lat: 1.318, lng: 103.892 },
+  "38": { lat: 1.3104, lng: 103.886 },
+  "39": { lat: 1.3142, lng: 103.892 },
+  "40": { lat: 1.3047, lng: 103.905 },
+  "41": { lat: 1.3047, lng: 103.9 },
+  "42": { lat: 1.3047, lng: 103.918 },
+  "43": { lat: 1.3047, lng: 103.918 },
+  "44": { lat: 1.3104, lng: 103.918 },
+  "45": { lat: 1.3104, lng: 103.93 },
+  "46": { lat: 1.3329, lng: 103.943 },
+  "47": { lat: 1.3409, lng: 103.943 },
+  "48": { lat: 1.3409, lng: 103.955 },
+  "49": { lat: 1.3526, lng: 103.945 },
+  "50": { lat: 1.3526, lng: 103.96 },
+  "51": { lat: 1.3526, lng: 103.96 },
+  "52": { lat: 1.3496, lng: 103.943 },
+  "53": { lat: 1.3636, lng: 103.892 },
+  "54": { lat: 1.3636, lng: 103.9 },
+  "55": { lat: 1.3636, lng: 103.87 },
+  "56": { lat: 1.3565, lng: 103.835 },
+  "57": { lat: 1.3565, lng: 103.825 },
+  "58": { lat: 1.3142, lng: 103.806 },
+  "59": { lat: 1.3296, lng: 103.806 },
+  "60": { lat: 1.3387, lng: 103.697 },
+  "61": { lat: 1.3387, lng: 103.71 },
+  "62": { lat: 1.3387, lng: 103.71 },
+  "63": { lat: 1.3387, lng: 103.71 },
+  "64": { lat: 1.3387, lng: 103.72 },
+  "65": { lat: 1.3387, lng: 103.74 },
+  "66": { lat: 1.3387, lng: 103.75 },
+  "67": { lat: 1.3567, lng: 103.75 },
+  "68": { lat: 1.3567, lng: 103.75 },
+  "69": { lat: 1.3567, lng: 103.69 },
+  "70": { lat: 1.3567, lng: 103.69 },
+  "71": { lat: 1.3567, lng: 103.69 },
+  "72": { lat: 1.4019, lng: 103.74 },
+  "73": { lat: 1.4019, lng: 103.74 },
+  "75": { lat: 1.4498, lng: 103.82 },
+  "76": { lat: 1.4498, lng: 103.82 },
+  "77": { lat: 1.4255, lng: 103.78 },
+  "78": { lat: 1.4255, lng: 103.78 },
+  "79": { lat: 1.4255, lng: 103.79 },
+  "80": { lat: 1.3795, lng: 103.9 },
+  "81": { lat: 1.3565, lng: 103.96 },
   "82": { lat: 1.3795, lng: 103.96 },
 };

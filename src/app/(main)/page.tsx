@@ -7,7 +7,6 @@ import {
   MapPin,
   ShoppingBag,
   Sparkles,
-  Sun,
   Utensils,
 } from "lucide-react";
 import { redirect } from "next/navigation";
@@ -24,6 +23,12 @@ import { Button } from "@/components/ui/button";
 import { CardContent } from "@/components/ui/card";
 import { getNearbyTop, type PlaceDTO } from "@/lib/discovery-queries";
 import { petPlaceholderImage } from "@/lib/pet-data";
+import {
+  ALERT_ICON,
+  ALERT_ICON_TONE,
+  type CareAlert,
+  topCareAlert,
+} from "@/lib/pet-data/care-alerts";
 import type { PetCareLogDTO, PetDTO } from "@/lib/pet-queries";
 import { getPetCareContext } from "@/lib/pet-queries";
 import { cn } from "@/lib/utils";
@@ -121,7 +126,7 @@ function Dashboard({
             weightLabel={weightLabel}
           />
           <div className="grid gap-6">
-            <AiCareAlert alert={buildCareAlert(pet)} />
+            <AiCareAlert alert={topCareAlert(pet)} />
             <DailyCareLog logs={pet.careLogs} pet={pet} />
           </div>
           <KibbleReminder
@@ -211,79 +216,6 @@ function PetCard({
     </SpotlightCard>
   );
 }
-
-type CareAlertLevel = "attention" | "watch" | "info" | "good";
-type CareAlert = {
-  level: CareAlertLevel;
-  label: string;
-  message: string;
-  cta?: { href: string; text: string };
-};
-
-const OFF_MOODS = new Set(["off", "anxious", "tired", "sad", "lethargic"]);
-
-// Derive a profile-aware alert from the pet's recent care logs + conditions.
-function buildCareAlert(pet: PetDTO): CareAlert {
-  const recent = pet.careLogs.slice(0, 6);
-  const symptoms = [...new Set(recent.flatMap((l) => l.symptoms))].filter(
-    Boolean,
-  );
-  if (symptoms.length > 0) {
-    return {
-      level: "attention",
-      label: "Vet check suggested",
-      message: `${pet.name} recently logged ${symptoms.slice(0, 3).join(", ")}. If it keeps up, a quick vet visit is worth booking.`,
-      cta: { href: "/discovery", text: "Find a vet nearby" },
-    };
-  }
-  const offMoods = recent.filter(
-    (l) => l.mood && OFF_MOODS.has(l.mood.toLowerCase()),
-  );
-  if (offMoods.length >= 2) {
-    return {
-      level: "watch",
-      label: "Mood watch",
-      message: `${pet.name} has seemed ${offMoods[0].mood?.toLowerCase()} across recent check-ins. Keep an eye on appetite and energy.`,
-    };
-  }
-  if (pet.medicalConditions.length > 0) {
-    return {
-      level: "info",
-      label: "Care reminder",
-      message: `${pet.name} has ${pet.medicalConditions.slice(0, 2).join(" & ")} on file — keep meds and diet consistent, and watch for flare-ups in SG's humidity.`,
-      cta: { href: "/assistant", text: "Ask the assistant" },
-    };
-  }
-  const latestFed = recent.find((l) => l.fed != null);
-  if (latestFed?.fed === false) {
-    return {
-      level: "watch",
-      label: "Reminder",
-      message: `${pet.name} isn't marked as fed in the latest check-in — don't forget today's meal.`,
-    };
-  }
-  return {
-    level: "good",
-    label: "All good",
-    message:
-      recent.length > 0
-        ? `No concerns in ${pet.name}'s recent check-ins. Keep up the daily logs and regular vet visits.`
-        : `Start logging ${pet.name}'s meals, mood, and weight to get personalised care alerts here.`,
-  };
-}
-
-const ALERT_ICON: Record<CareAlertLevel, typeof Sun> = {
-  attention: Cross,
-  watch: Sun,
-  info: Sparkles,
-  good: Sun,
-};
-const ALERT_ICON_TONE: Record<CareAlertLevel, string> = {
-  attention: "text-rose-500",
-  watch: "text-amber-500",
-  info: "text-primary",
-  good: "text-amber-500",
-};
 
 function AiCareAlert({ alert }: { alert: CareAlert }) {
   const Icon = ALERT_ICON[alert.level];
