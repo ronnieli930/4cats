@@ -11,13 +11,36 @@ datasource db {
 }
 
 model Pet {
-  id        String   @id @default(cuid())
-  userId    String
-  name      String
-  species   String
-  breed     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                  String    @id @default(cuid())
+  userId              String
+  name                String
+  species             String
+  breed               String?
+  ageYears            Decimal?
+  weightKg            Decimal?
+  medicalConditions   String[]  @default([])
+  dietaryRestrictions String[]  @default([])
+  locationPostalCode  String?
+  locationLabel       String?
+  notes               String?
+  careLogs            CareLog[]
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
   @@index([userId])
+}
+
+model CareLog {
+  id        String   @id @default(cuid())
+  petId     String
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  fed       Boolean?
+  mood      String?
+  weightKg  Decimal?
+  symptoms  String[] @default([])
+  notes     String?
+  loggedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+
+  @@index([petId, loggedAt])
 }
