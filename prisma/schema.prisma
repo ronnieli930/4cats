@@ -2,30 +2,33 @@
 // Pet.userId matches auth.users.id from Supabase.
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider        = "prisma-client"
+  output          = "../generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider   = "postgresql"
+  extensions = [pgcrypto, vector]
 }
 
 model Pet {
-  id                  String    @id @default(cuid())
+  id                  String           @id @default(cuid())
   userId              String
   name                String
   species             String
   breed               String?
-  ageYears            Decimal?
-  weightKg            Decimal?
-  medicalConditions   String[]  @default([])
-  dietaryRestrictions String[]  @default([])
+  ageYears            Decimal?         @db.Decimal(5, 2)
+  weightKg            Decimal?         @db.Decimal(6, 2)
+  medicalConditions   String[]         @default([])
+  dietaryRestrictions String[]         @default([])
   locationPostalCode  String?
   locationLabel       String?
   notes               String?
   careLogs            CareLog[]
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  bookingRequests     BookingRequest[]
+  createdAt           DateTime         @default(now())
+  updatedAt           DateTime         @updatedAt
 
   @@index([userId])
 }
@@ -36,11 +39,223 @@ model CareLog {
   pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
   fed       Boolean?
   mood      String?
-  weightKg  Decimal?
+  weightKg  Decimal? @db.Decimal(6, 2)
   symptoms  String[] @default([])
   notes     String?
   loggedAt  DateTime @default(now())
   createdAt DateTime @default(now())
 
   @@index([petId, loggedAt])
+}
+
+model IngestionRun {
+  id         String    @id @default(uuid()) @db.Uuid
+  provider   String
+  pipeline   String
+  query      String?
+  status     String    @default("running")
+  stats      Json      @default("{}")
+  error      String?
+  startedAt  DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  finishedAt DateTime? @map("finished_at") @db.Timestamptz
+
+  @@map("ingestion_runs")
+}
+
+model Product {
+  id                 String           @id @default(uuid()) @db.Uuid
+  source             String
+  sourceProductId    String           @map("source_product_id")
+  handle             String?
+  url                String?
+  title              String
+  brand              String?
+  petType            String?          @map("pet_type")
+  productType        String?          @map("product_type")
+  tags               String[]         @default([])
+  priceMinCents      Int?             @map("price_min_cents")
+  priceMaxCents      Int?             @map("price_max_cents")
+  currency           String           @default("SGD")
+  available          Boolean?
+  description        String?
+  ingredients        String?
+  nutritionalAnalysis String?         @map("nutritional_analysis")
+  suitableFor        String?          @map("suitable_for")
+  feedingInstructions String?         @map("feeding_instructions")
+  countryOfOrigin    String?          @map("country_of_origin")
+  raw                Json             @default("{}")
+  lastFetchedAt      DateTime         @default(now()) @map("last_fetched_at") @db.Timestamptz
+  createdAt          DateTime         @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime         @default(now()) @map("updated_at") @db.Timestamptz
+  variants           ProductVariant[]
+
+  @@unique([source, sourceProductId])
+  @@map("products")
+}
+
+model ProductVariant {
+  id                  String   @id @default(uuid()) @db.Uuid
+  productId           String   @map("product_id") @db.Uuid
+  product             Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sourceVariantId     String   @map("source_variant_id")
+  title               String?
+  sku                 String?
+  priceCents          Int?     @map("price_cents")
+  compareAtPriceCents Int?     @map("compare_at_price_cents")
+  available           Boolean?
+  raw                 Json     @default("{}")
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@unique([productId, sourceVariantId])
+  @@map("product_variants")
+}
+
+model ServicePlace {
+  id                       String                    @id @default(uuid()) @db.Uuid
+  source                   String                    @default("google_places")
+  sourcePlaceId            String                    @map("source_place_id")
+  kind                     String
+  name                     String
+  formattedAddress         String?                   @map("formatted_address")
+  postalCode               String?                   @map("postal_code")
+  neighbourhood            String?
+  lat                      Float?
+  lng                      Float?
+  rating                   Decimal?                  @db.Decimal(3, 2)
+  userRatingCount          Int?                      @map("user_rating_count")
+  priceLevel               String?                   @map("price_level")
+  businessStatus           String?                   @map("business_status")
+  nationalPhoneNumber      String?                   @map("national_phone_number")
+  internationalPhoneNumber String?                   @map("international_phone_number")
+  websiteUrl               String?                   @map("website_url")
+  googleMapsUrl            String?                   @map("google_maps_url")
+  bookingUrl               String?                   @map("booking_url")
+  primaryEmail             String?                   @map("primary_email")
+  contactSource            String?                   @map("contact_source")
+  openingHours             Json                      @default("{}") @map("opening_hours")
+  serviceTags              String[]                  @default([]) @map("service_tags")
+  suitabilityTags          String[]                  @default([]) @map("suitability_tags")
+  reviewSummary            String?                   @map("review_summary")
+  raw                      Json                      @default("{}") @db.JsonB
+  lastFetchedAt            DateTime                  @default(now()) @map("last_fetched_at") @db.Timestamptz
+  createdAt                DateTime                  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                DateTime                  @default(now()) @map("updated_at") @db.Timestamptz
+  contacts                 ServicePlaceContact[]
+  reviews                  PlaceReview[]
+  suitability              ServicePlaceSuitability[]
+  bookingRequests          BookingRequest[]
+
+  @@unique([source, sourcePlaceId])
+  @@index([kind, rating(sort: Desc), userRatingCount(sort: Desc)])
+  @@index([lat, lng])
+  @@map("service_places")
+}
+
+model ServicePlaceContact {
+  id               String       @id @default(uuid()) @db.Uuid
+  servicePlaceId   String       @map("service_place_id") @db.Uuid
+  servicePlace     ServicePlace @relation(fields: [servicePlaceId], references: [id], onDelete: Cascade)
+  method           String
+  label            String?
+  value            String
+  normalizedValue  String?      @map("normalized_value")
+  isBookingCapable Boolean      @default(false) @map("is_booking_capable")
+  source           String       @default("google_places")
+  confidence       Decimal      @default(1.0) @db.Decimal(3, 2)
+  raw              Json         @default("{}")
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([servicePlaceId, method, value])
+  @@index([servicePlaceId, method])
+  @@map("service_place_contacts")
+}
+
+model PlaceReview {
+  id                             String       @id @default(uuid()) @db.Uuid
+  servicePlaceId                 String       @map("service_place_id") @db.Uuid
+  servicePlace                   ServicePlace @relation(fields: [servicePlaceId], references: [id], onDelete: Cascade)
+  source                         String       @default("google_places")
+  sourceReviewId                 String?      @map("source_review_id")
+  rating                         Int?
+  text                           String?
+  authorName                     String?      @map("author_name")
+  authorUri                      String?      @map("author_uri")
+  languageCode                   String?      @map("language_code")
+  relativePublishTimeDescription String?      @map("relative_publish_time_description")
+  publishedAt                    DateTime?    @map("published_at") @db.Timestamptz
+  raw                            Json         @default("{}")
+  createdAt                      DateTime     @default(now()) @map("created_at") @db.Timestamptz
+
+  @@unique([servicePlaceId, source, sourceReviewId])
+  @@index([servicePlaceId, rating(sort: Desc)])
+  @@map("place_reviews")
+}
+
+model ServicePlaceSuitability {
+  id                String       @id @default(uuid()) @db.Uuid
+  servicePlaceId    String       @map("service_place_id") @db.Uuid
+  servicePlace      ServicePlace @relation(fields: [servicePlaceId], references: [id], onDelete: Cascade)
+  petSpecies        String?      @map("pet_species")
+  breed             String?
+  condition         String?
+  score             Decimal      @default(0) @db.Decimal(5, 2)
+  positiveEvidence  String[]     @default([]) @map("positive_evidence")
+  cautionEvidence   String[]     @default([]) @map("caution_evidence")
+  evidenceReviewIds String[]     @default([]) @map("evidence_review_ids")
+  summary           String?
+  model             String?
+  raw               Json         @default("{}")
+  createdAt         DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime     @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@unique([servicePlaceId, petSpecies, breed, condition])
+  @@index([petSpecies, breed, condition, score(sort: Desc)])
+  @@map("service_place_suitability")
+}
+
+model BookingRequest {
+  id                  String        @id @default(uuid()) @db.Uuid
+  petId               String?       @map("pet_id")
+  pet                 Pet?          @relation(fields: [petId], references: [id], onDelete: SetNull)
+  servicePlaceId      String?       @map("service_place_id") @db.Uuid
+  servicePlace        ServicePlace? @relation(fields: [servicePlaceId], references: [id], onDelete: SetNull)
+  status              String        @default("draft")
+  requestedService    String?       @map("requested_service")
+  requestedStartAt    DateTime?     @map("requested_start_at") @db.Timestamptz
+  requestedTimeWindow String?       @map("requested_time_window")
+  customerName        String?       @map("customer_name")
+  customerEmail       String?       @map("customer_email")
+  customerPhone       String?       @map("customer_phone")
+  petSnapshot         Json          @default("{}") @map("pet_snapshot")
+  message             String?
+  outboundChannel     String?       @map("outbound_channel")
+  outboundTo          String?       @map("outbound_to")
+  outboundPayload     Json          @default("{}") @map("outbound_payload")
+  externalEventUrl    String?       @map("external_event_url")
+  providerResponse    Json          @default("{}") @map("provider_response")
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime      @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@index([petId, createdAt(sort: Desc)])
+  @@index([servicePlaceId, createdAt(sort: Desc)])
+  @@map("booking_requests")
+}
+
+model KnowledgeChunk {
+  id         String                      @id @default(uuid()) @db.Uuid
+  entityType String                      @map("entity_type")
+  entityId   String                      @map("entity_id") @db.Uuid
+  source     String
+  title      String?
+  body       String
+  metadata   Json                        @default("{}")
+  embedding  Unsupported("vector(1536)")?
+  createdAt  DateTime                    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime                    @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@unique([entityType, entityId])
+  @@index([entityType, entityId])
+  @@index([source])
+  @@map("knowledge_chunks")
 }
