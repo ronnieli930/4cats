@@ -13,6 +13,7 @@ import {
 } from "@/lib/agents/grooming-agent";
 import type { MemeAgentContext } from "@/lib/agents/meme-agent";
 import { memeAgent } from "@/lib/agents/meme-agent";
+import { buildVetAgent, type VetAgentContext } from "@/lib/agents/vet-agent";
 import { buildAssistantSystemPrompt, buildPetTools } from "@/lib/ai/pet-tools";
 import { getModel, SYSTEM_PROMPT } from "@/lib/ai/providers";
 import { getUser } from "@/lib/auth/server";
@@ -74,6 +75,10 @@ export async function POST(
 
   if (agentId === "grooming") {
     return handleGroomingAgent(req);
+  }
+
+  if (agentId === "vet") {
+    return handleVetAgent(req);
   }
 
   if (agentId !== "meme") {
@@ -347,6 +352,156 @@ async function handleFoodAgent(req: Request): Promise<Response> {
     return NextResponse.json({
       assistantText: assistantText || undefined,
       products,
+      toolError,
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "Agent run failed";
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
+}
+
+async function handleVetAgent(req: Request): Promise<Response> {
+  // Accepts multipart/form-data (image + message + lat/lng) or JSON.
+  let message = "";
+  let imageBlob: Blob | null = null;
+  let lat: number | undefined;
+  let lng: number | undefined;
+
+  const contentType = req.headers.get("content-type") ?? "";
+  if (contentType.includes("multipart/form-data")) {
+    let form: FormData;
+    try {
+      form = await req.formData();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid form data." },
+        { status: 400 },
+      );
+    }
+    const messageField = form.get("message");
+    if (typeof messageField === "string") message = messageField.trim();
+    const image = form.get("image");
+    if (image instanceof Blob && image.size > 0) imageBlob = image;
+    const latField = form.get("lat");
+    const lngField = form.get("lng");
+    if (typeof latField === "string" && latField) lat = Number(latField);
+    if (typeof lngField === "string" && lngField) lng = Number(lngField);
+  } else {
+    try {
+      const body = (await req.json()) as {
+        message?: string;
+        lat?: number;
+        lng?: number;
+      };
+      message = typeof body.message === "string" ? body.message.trim() : "";
+      if (typeof body.lat === "number") lat = body.lat;
+      if (typeof body.lng === "number") lng = body.lng;
+    } catch {
+      /* empty body is fine */
+    }
+  }
+
+  if (!message) {
+    message =
+      "My pet isn't feeling well — please assess the symptoms and suggest what to do and which vet to see.";
+  }
+
+  const { pet } = await getPetCareContext();
+  const profileText = buildPetProfilePrompt(pet);
+
+  // Resolve a seed location: browser GPS (preferred) → pet's saved postal code.
+  let locationNote: string;
+  if (
+    typeof lat === "number" &&
+    typeof lng === "number" &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng)
+  ) {
+    locationNote = "Using the user's shared current location (browser GPS).";
+  } else if (pet?.locationPostalCode) {
+    const coords = postalToLatLng(pet.locationPostalCode);
+    if (coords) {
+      lat = coords.lat;
+      lng = coords.lng;
+      locationNote = `Using the pet's saved home area (postal ${pet.locationPostalCode}${pet.locationLabel ? `, ${pet.locationLabel}` : ""}).`;
+    } else {
+      lat = undefined;
+      lng = undefined;
+      locationNote =
+        "No usable location yet — give triage advice, then ask the user for a Singapore postal code.";
+    }
+  } else {
+    lat = undefined;
+    lng = undefined;
+    locationNote =
+      "No location on file — give triage advice, then ask the user to share their location or a Singapore postal code.";
+  }
+
+  let photoDataUrl: string | undefined;
+  if (imageBlob) {
+    if (imageBlob.size > MAX_IMAGE_BYTES) {
+      return NextResponse.json(
+        {
+          error: `Image too large (max ${MAX_IMAGE_BYTES / (1024 * 1024)} MB).`,
+        },
+        { status: 400 },
+      );
+    }
+    const mediaType = imageBlob.type || "image/png";
+    if (!ALLOWED_IMAGE_TYPES.has(mediaType)) {
+      return NextResponse.json(
+        { error: "Unsupported image type. Use PNG, JPEG, or WebP." },
+        { status: 400 },
+      );
+    }
+    try {
+      const buf = Buffer.from(await imageBlob.arrayBuffer());
+      const preview = await downscaleForVisionPreview(buf);
+      photoDataUrl = `data:image/jpeg;base64,${preview.toString("base64")}`;
+    } catch {
+      return NextResponse.json(
+        {
+          error:
+            "Could not read the image. Try a different PNG, JPEG, or WebP.",
+        },
+        { status: 400 },
+      );
+    }
+  }
+
+  const runContext: VetAgentContext = {
+    defaultLat: lat,
+    defaultLng: lng,
+    petPhotoDataUrl: photoDataUrl,
+    foundPlaces: new Map<string, ServicePlaceCard>(),
+  };
+
+  const agentInput = photoDataUrl
+    ? [
+        userMessage([
+          { type: "input_text", text: message },
+          { type: "input_image", image: photoDataUrl },
+        ]),
+      ]
+    : message;
+
+  try {
+    const agent = buildVetAgent(profileText, locationNote);
+    const result = await run(agent, agentInput, {
+      context: runContext,
+      maxTurns: 12,
+    });
+
+    const assistantText = extractAllTextOutput(result.newItems).trim();
+    const ctx = result.runContext.context as VetAgentContext;
+    const places = Array.from(ctx.foundPlaces.values());
+    const toolError = parseToolError(
+      result.newItems as { type: string; output?: unknown }[],
+    );
+
+    return NextResponse.json({
+      assistantText: assistantText || undefined,
+      places,
       toolError,
     });
   } catch (e) {

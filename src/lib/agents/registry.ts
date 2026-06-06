@@ -23,6 +23,13 @@ export const ASSISTANT_AGENTS = [
     kind: "grooming" as const,
   },
   {
+    id: "vet",
+    label: "Vet finder",
+    description:
+      "Describe symptoms or add a photo — get triage advice and nearby vets.",
+    kind: "vet" as const,
+  },
+  {
     id: "meme",
     label: "Meme agent",
     description: "Upload a pet photo and get a generated meme image.",

@@ -1,5 +1,6 @@
 import {
   ExternalLink,
+  type LucideIcon,
   MapPin,
   Navigation,
   Phone,
@@ -7,6 +8,7 @@ import {
   ShoppingBag,
   Sparkles,
   Star,
+  Stethoscope,
   UserRound,
 } from "lucide-react";
 import Image from "next/image";
@@ -66,13 +68,19 @@ function ProductCard({ product }: { product: FoodProduct }) {
   );
 }
 
-function StoreCard({ place }: { place: ServicePlaceCard }) {
+function StoreCard({
+  place,
+  icon: Icon = Scissors,
+}: {
+  place: ServicePlaceCard;
+  icon?: LucideIcon;
+}) {
   const tags = place.tags.slice(0, 3);
   return (
     <div className="flex flex-col gap-2 rounded-2xl border border-border bg-card p-4 shadow-[var(--llp-sh-1)]">
       <div className="flex items-start gap-2">
         <div className="grid size-9 shrink-0 place-items-center rounded-full bg-primary/12 text-primary">
-          <Scissors className="size-4" />
+          <Icon className="size-4" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="font-semibold leading-snug text-foreground">
@@ -236,7 +244,11 @@ export function ChatMessageView({ message }: { message: ChatMessageDTO }) {
       {data?.places && data.places.length > 0 ? (
         <div className="ml-11 grid gap-3 sm:grid-cols-2">
           {data.places.map((p) => (
-            <StoreCard key={p.id} place={p} />
+            <StoreCard
+              icon={message.agentId === "vet" ? Stethoscope : Scissors}
+              key={p.id}
+              place={p}
+            />
           ))}
         </div>
       ) : null}

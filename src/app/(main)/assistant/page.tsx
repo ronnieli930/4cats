@@ -108,6 +108,36 @@ async function runAgent(
       };
     }
 
+    if (agentId === "vet") {
+      const fd = new FormData();
+      fd.set(
+        "message",
+        text ||
+          "My pet isn't feeling well — assess the symptoms and suggest what to do and which vet to see.",
+      );
+      if (file) fd.set("image", file);
+      if (coords) {
+        fd.set("lat", String(coords.lat));
+        fd.set("lng", String(coords.lng));
+      }
+      const res = await fetch("/api/agents/vet", { method: "POST", body: fd });
+      const data = (await res.json()) as {
+        assistantText?: string;
+        places?: ServicePlaceCard[];
+        toolError?: string;
+        error?: string;
+      };
+      if (!res.ok)
+        throw new Error(data.error || `Request failed (${res.status})`);
+      return {
+        content:
+          data.assistantText ||
+          data.toolError ||
+          "I couldn't assess that just now — try describing the symptoms in a bit more detail.",
+        data: { places: data.places },
+      };
+    }
+
     if (agentId === "grooming") {
       const res = await fetch("/api/agents/grooming", {
         method: "POST",
@@ -397,8 +427,11 @@ export default function AssistantPage() {
   }
 
   const showsPhoto =
-    selectedAgents.includes("food") || selectedAgents.includes("meme");
-  const showsLocation = selectedAgents.includes("grooming");
+    selectedAgents.includes("food") ||
+    selectedAgents.includes("meme") ||
+    selectedAgents.includes("vet");
+  const showsLocation =
+    selectedAgents.includes("grooming") || selectedAgents.includes("vet");
   const isEmpty = messages.length === 0 && pendingAgents.length === 0;
   const activeAgentId = selectedAgents[0] ?? "general";
 
