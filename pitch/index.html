@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Little Lovely Pets — Pitch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --ink:#2a2230;
+    --muted:#6c6270;
+    --wine:#7c2339;
+    --wine2:#9e3450;
+    --cream:#fff7f1;
+    --card:#ffffff;
+    --pink:#f6d7dd;
+    --pink2:#f2c2cb;
+    --yellow:#f6c453;
+    --navy:#2b3553;
+    --mint:#1fa971;
+    --line:rgba(42,34,48,.10);
+    --shadow:0 20px 60px rgba(120,35,56,.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:Inter,system-ui,sans-serif;
+    color:var(--ink);
+    background:
+      radial-gradient(1200px 700px at 85% -10%, rgba(246,196,83,.18), transparent 60%),
+      radial-gradient(1100px 700px at -10% 110%, rgba(246,215,221,.55), transparent 55%),
+      var(--cream);
+    overflow:hidden;
+  }
+  .display{font-family:Quicksand,sans-serif}
+
+  /* deck */
+  .deck{position:fixed;inset:0;display:grid;place-items:center}
+  .slide{
+    position:absolute;inset:0;
+    display:none;
+    padding:5.2vh 6.5vw;
+    flex-direction:column;
+    justify-content:center;
+    animation:fade .45s ease both;
+  }
+  .slide.active{display:flex}
+  @keyframes fade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+
+  /* chrome */
+  .progress{position:fixed;top:0;left:0;height:4px;background:linear-gradient(90deg,var(--wine),var(--wine2));z-index:50;transition:width .35s ease}
+  .counter{position:fixed;bottom:22px;right:28px;font-size:13px;font-weight:600;color:var(--muted);z-index:50;letter-spacing:.02em}
+  .brandmark{position:fixed;top:22px;left:28px;display:flex;align-items:center;gap:9px;z-index:50;font-family:Quicksand;font-weight:700;color:var(--wine);font-size:15px}
+  .hint{position:fixed;bottom:22px;left:28px;font-size:12px;color:var(--muted);z-index:50}
+  .paw{width:22px;height:22px;flex:0 0 auto}
+
+  /* typography */
+  .kicker{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--wine);background:var(--pink);padding:7px 14px;border-radius:999px;width:fit-content}
+  h1{font-family:Quicksand;font-weight:700;font-size:clamp(38px,6.6vw,82px);line-height:1.02;letter-spacing:-.02em}
+  h2{font-family:Quicksand;font-weight:700;font-size:clamp(30px,4.6vw,56px);line-height:1.05;letter-spacing:-.015em}
+  h3{font-family:Quicksand;font-weight:700;font-size:clamp(18px,1.7vw,23px)}
+  .lede{font-size:clamp(17px,1.9vw,24px);color:var(--muted);line-height:1.5;max-width:60ch}
+  .em{color:var(--wine)}
+  .small{font-size:14px;color:var(--muted)}
+
+  /* layout helpers */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:34px;align-items:center}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+  .stack{display:flex;flex-direction:column;gap:20px}
+  .gap12{display:flex;flex-direction:column;gap:12px}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px 26px;box-shadow:0 6px 26px rgba(40,28,33,.06)}
+  .card .ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-size:22px;margin-bottom:14px}
+  .card p{color:var(--muted);font-size:15px;line-height:1.5;margin-top:6px}
+
+  .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 16px;font-weight:600;font-size:14px;color:var(--ink)}
+
+  .stat{background:#fff;border:1px solid var(--line);border-radius:20px;padding:22px 22px;box-shadow:0 6px 26px rgba(40,28,33,.05)}
+  .stat .n{font-family:Quicksand;font-weight:700;font-size:clamp(30px,3.6vw,46px);color:var(--wine);line-height:1}
+  .stat .l{margin-top:8px;font-size:14px;color:var(--muted);font-weight:500;line-height:1.35}
+
+  ul.clean{list-style:none;display:flex;flex-direction:column;gap:14px}
+  ul.clean li{display:flex;gap:12px;font-size:clamp(15px,1.55vw,19px);line-height:1.45}
+  ul.clean li b{color:var(--ink)}
+  ul.clean .dot{flex:0 0 auto;width:11px;height:11px;border-radius:50%;margin-top:8px;background:var(--wine)}
+  ul.clean .dot.y{background:var(--yellow)}
+  ul.clean .dot.n{background:var(--navy)}
+  ul.clean .dot.m{background:var(--mint)}
+
+  .tag{display:inline-block;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600;color:var(--ink);margin:0 6px 8px 0}
+
+  /* flow diagram */
+  .flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+  .node{flex:1;min-width:150px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;text-align:center;box-shadow:0 6px 20px rgba(40,28,33,.05)}
+  .node .h{font-family:Quicksand;font-weight:700;font-size:16px}
+  .node .s{font-size:12.5px;color:var(--muted);margin-top:5px;line-height:1.4}
+  .arrow{display:grid;place-items:center;color:var(--wine);font-size:26px;font-weight:700;padding:0 10px}
+
+  .codexbar{background:linear-gradient(120deg,var(--navy),#1c2236);color:#fff;border-radius:22px;padding:26px 28px}
+  .codexbar h3{color:#fff}
+  .codexbar .step{display:flex;gap:12px;align-items:flex-start;font-size:15px;line-height:1.45;color:rgba(255,255,255,.86)}
+  .codexbar .num{font-family:Quicksand;font-weight:700;color:var(--yellow);min-width:22px}
+
+  .wine-band{background:linear-gradient(130deg,var(--wine),var(--wine2));color:#fff;border-radius:28px;padding:48px 52px;box-shadow:var(--shadow);position:relative;overflow:hidden}
+  .wine-band h2{color:#fff}
+  .wine-band .lede{color:rgba(255,255,255,.88)}
+  .ghostpaw{position:absolute;right:-30px;top:-30px;opacity:.12;width:230px;height:230px}
+
+  .footer-meta{display:flex;gap:22px;flex-wrap:wrap;color:var(--muted);font-size:14px;font-weight:500}
+  .footer-meta b{color:var(--ink)}
+  .mt-auto{margin-top:auto}
+  .mb24{margin-bottom:24px}
+  .mt28{margin-top:28px}
+  .mt20{margin-top:20px}
+
+  /* title hero + large pet photos */
+  .hero2{display:grid;grid-template-columns:1.06fr .94fr;gap:46px;align-items:center}
+  .petgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .petgrid img{width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:24px;border:5px solid #fff;box-shadow:0 16px 38px rgba(120,35,56,.2)}
+  .petcap{text-align:center;margin-top:18px;font-size:15px;font-weight:600;color:var(--muted)}
+
+  /* multi-agent map */
+  .agentmap{display:flex;flex-direction:column;gap:14px}
+  .orch{background:linear-gradient(120deg,var(--wine),var(--wine2));color:#fff;border-radius:14px;padding:13px 18px;font-family:Quicksand;font-weight:700;font-size:18px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 22px rgba(120,35,56,.22)}
+  .orch span{font-family:Inter;font-weight:600;font-size:12px;color:rgba(255,255,255,.82);margin-left:auto;letter-spacing:.02em}
+  .branch{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .spec{border:1px solid var(--line);background:#fff;border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:3px}
+  .spec b{font-size:14.5px}
+  .spec span{font-size:11.5px;color:var(--muted);font-family:ui-monospace,SFMono-Regular,monospace}
+  .spec.ghost{grid-column:1 / -1;border-style:dashed;background:#faf6f7}
+  .memewrap{flex:1;display:grid;place-items:center;margin:14px 0}
+  .memewrap img{max-height:40vh;width:auto;max-width:100%;border-radius:16px;box-shadow:var(--shadow)}
+</style>
+</head>
+<body>
+<div class="progress" id="progress"></div>
+<div class="brandmark">
+  <svg class="paw" viewBox="0 0 24 24" fill="currentColor"><circle cx="5.5" cy="11" r="2.1"/><circle cx="9.5" cy="6.5" r="2.1"/><circle cx="14.5" cy="6.5" r="2.1"/><circle cx="18.5" cy="11" r="2.1"/><path d="M12 12.2c-2.6 0-4.8 1.9-5.4 4.3-.4 1.7 1 3.2 2.7 3.2.9 0 1.7-.4 2.7-.4s1.8.4 2.7.4c1.7 0 3.1-1.5 2.7-3.2-.6-2.4-2.8-4.3-5.4-4.3z"/></svg>
+  Little Lovely Pets
+</div>
+<div class="counter"><span id="cur">1</span> / <span id="tot">10</span></div>
+<div class="hint">← → to navigate</div>
+
+<div class="deck" id="deck">
+
+  <!-- 1 — Title -->
+  <section class="slide active">
+    <div class="hero2">
+      <div>
+        <span class="kicker">🐾 Sea × OpenAI · Codex Hackathon · 6 Jun 2026</span>
+        <h1 class="mt20">Lovely care,<br/><span class="em">tailored to every pet.</span></h1>
+        <p class="lede mt20">An AI pet-care companion for Singapore — profile-aware advice <b>grounded in real local data</b>, a live map of trusted services, and a daily-care dashboard. For dogs, cats, and the little ones too.</p>
+        <div class="row mt28">
+          <span class="pill">🤖 Grounded AI assistant</span>
+          <span class="pill">🗺️ Island-wide discovery</span>
+          <span class="pill">📋 Data-driven care</span>
+          <span class="pill">🐇 Every species</span>
+        </div>
+      </div>
+      <div>
+        <div class="petgrid">
+          <img src="assets/pet-siamese.jpg" alt="Our Siamese-point cat" style="object-position:center 30%"/>
+          <img src="assets/pet-tuxedo.jpg" alt="Our tuxedo cat" style="object-position:center 22%"/>
+          <img src="assets/pet-ragdoll.jpg" alt="Our Ragdoll cat" style="object-position:30% 42%"/>
+          <img src="assets/pet-rabbit.jpg" alt="Our rabbit" style="object-position:center 36%"/>
+        </div>
+        <p class="petcap">Built for — and tested on — our own cats &amp; rabbit. 🐾</p>
+      </div>
+    </div>
+    <div class="footer-meta mt28">
+      <span><b>Little Lovely Pets</b> · built this hackathon</span>
+      <span>Next.js 16 · Postgres + pgvector · OpenAI</span>
+      <span>Built end-to-end with <b>Codex</b></span>
+    </div>
+  </section>
+
+  <!-- 2 — Problem -->
+  <section class="slide">
+    <span class="kicker">The problem</span>
+    <h2 class="mt20">Pet care in Singapore is scattered<br/>— and generic AI doesn't know <span class="em">your</span> pet.</h2>
+    <div class="grid2 mt28">
+      <ul class="clean">
+        <li><span class="dot"></span><span><b>Anxious, first-time owners</b> get generic chatbot answers that ignore breed, age, conditions and home type.</span></li>
+        <li><span class="dot y"></span><span><b>Local reality is fragmented</b> — local rules, the climate, where to buy the right food, which vet is nearby — spread across dozens of sites.</span></li>
+        <li><span class="dot n"></span><span><b>It's not just dogs &amp; cats.</b> Rabbits, birds, fish and reptiles are badly underserved.</span></li>
+        <li><span class="dot m"></span><span><b>No memory.</b> Nothing connects daily care to advice or to the services you actually need.</span></li>
+      </ul>
+      <div class="card">
+        <h3>The gap</h3>
+        <p>A pet parent asks: <i>“My rabbit is off her food in this heat — what do I do, and who do I call nearby?”</i></p>
+        <p class="mt20">A general model guesses. A Google search returns ten tabs. Neither knows the pet, the city, or the clinic two MRT stops away.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 — Solution -->
+  <section class="slide">
+    <span class="kicker">The solution</span>
+    <h2 class="mt20">A profile-aware pet-care agent,<br/><span class="em">grounded in real Singapore data.</span></h2>
+    <p class="lede mt20">We pre-scraped and embedded Singapore's pet ecosystem into a retrieval store. The assistant answers via RAG over <b>real services, products and reviews</b> — personalised to each pet's profile and neighbourhood.</p>
+    <div class="grid4 mt28">
+      <div class="card"><div class="ic" style="background:var(--pink);color:var(--wine)">🤖</div><h3>Grounded assistant</h3><p>Chat answers retrieved from real SG data, scoped to your pet's breed, age, conditions &amp; local rules.</p></div>
+      <div class="card"><div class="ic" style="background:#fbe7b8;color:#9a6b00">🗺️</div><h3>Live discovery</h3><p>Map of nearby groomers, vets, pet stores &amp; cafés — nearest-first via geo search.</p></div>
+      <div class="card"><div class="ic" style="background:#dfeede;color:#13633f">📋</div><h3>Care dashboard</h3><p>Daily logs become <b>data-driven</b> alerts — “vet check suggested” when symptoms appear.</p></div>
+      <div class="card"><div class="ic" style="background:#e3e7f5;color:var(--navy)">🐾</div><h3>Every pet</h3><p>Multi-pet profiles across 6 species — switch context in one tap.</p></div>
+    </div>
+  </section>
+
+  <!-- 4 — How it works -->
+  <section class="slide">
+    <span class="kicker">How it works</span>
+    <h2 class="mt20">An offline data pipeline feeds<br/>a <span class="em">pgvector RAG</span> layer in real time.</h2>
+    <div class="flow mt28">
+      <div class="node"><div class="h">① Ingest</div><div class="s">Kohepets products + Google Places (vets, groomers, stores, cafés) + reviews</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="h">② Embed</div><div class="s">OpenAI <code>text-embedding-3-small</code> → 1536-dim vectors, HNSW index</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="h">③ Retrieve</div><div class="s">Postgres RPCs: semantic match + geo nearest-neighbour</div></div>
+      <div class="arrow">→</div>
+      <div class="node"><div class="h">④ Serve</div><div class="s">Agent chat, live map &amp; dashboard — all profile-aware</div></div>
+    </div>
+    <div class="grid3 mt28">
+      <div class="card"><h3>Two stores, one Postgres</h3><p>Prisma owns app data (pets, care logs); a Prisma-independent pgvector store holds the SG knowledge base.</p></div>
+      <div class="card"><h3>Idempotent &amp; auditable</h3><p>Every ingest upserts on a natural key and records a run — safe to re-run, local-first against Docker pgvector.</p></div>
+      <div class="card"><h3>Decoupled retrieval</h3><p>A self-contained search layer is the agent's tool surface — semantic + geographic recall in one call.</p></div>
+    </div>
+  </section>
+
+  <!-- 5 — Data / Deep Domain proof -->
+  <section class="slide">
+    <span class="kicker">Why it's credible · the data</span>
+    <h2 class="mt20">Real Singapore pet data — <span class="em">not a generic model.</span></h2>
+    <div class="grid4 mt28">
+      <div class="stat"><div class="n">310</div><div class="l">island-wide services<br/>indexed</div></div>
+      <div class="stat"><div class="n">333</div><div class="l">products across<br/>6 species</div></div>
+      <div class="stat"><div class="n">1,521</div><div class="l">real customer<br/>reviews embedded</div></div>
+      <div class="stat"><div class="n">2,164</div><div class="l">vector embeddings<br/>for RAG</div></div>
+    </div>
+    <div class="grid2 mt28">
+      <div class="card">
+        <h3>Services, by kind</h3>
+        <p style="margin-top:14px">
+          <span class="tag">🛁 105 groomers</span>
+          <span class="tag">🩺 90 vets</span>
+          <span class="tag">🛍️ 70 pet stores</span>
+          <span class="tag">☕ 45 pet cafés</span>
+        </p>
+      </div>
+      <div class="card">
+        <h3>Products, by species</h3>
+        <p style="margin-top:14px">
+          <span class="tag">🐱 142 cat</span>
+          <span class="tag">🐶 110 dog</span>
+          <span class="tag">🐰 49 rabbit</span>
+          <span class="tag">🐹 24 small pet</span>
+          <span class="tag">🐦 7 bird</span>
+          <span class="tag">🐠 1 fish</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 — Product surfaces -->
+  <section class="slide">
+    <span class="kicker">The product</span>
+    <h2 class="mt20">Three surfaces, one shared pet context.</h2>
+    <div class="grid3 mt28">
+      <div class="card">
+        <div class="ic" style="background:var(--pink);color:var(--wine)">💬</div>
+        <h3>Assistant</h3>
+        <p>A <b>multi-agent</b> assistant that plans each request and delegates to food, grooming, vet &amp; meme specialists — every answer grounded in your pet's profile and neighbourhood.</p>
+      </div>
+      <div class="card">
+        <div class="ic" style="background:#fbe7b8;color:#9a6b00">🗺️</div>
+        <h3>Discovery</h3>
+        <p>Interactive Leaflet map with paw markers, radius slider and tabs for groomers, vets, stores, cafés &amp; food — sorted nearest-first from your postcode.</p>
+      </div>
+      <div class="card">
+        <div class="ic" style="background:#dfeede;color:#13633f">📋</div>
+        <h3>Dashboard</h3>
+        <p>Log meals, mood, weight &amp; symptoms. The AI care alert is <b>derived from your logs</b> — surfacing real next actions, not hard-coded text.</p>
+      </div>
+    </div>
+    <p class="lede mt28">Cookie-backed active-pet state means switching from your dog to your rabbit re-grounds <b>every</b> surface at once.</p>
+  </section>
+
+  <!-- 7 — Multi-agent system -->
+  <section class="slide">
+    <span class="kicker">Inside the assistant</span>
+    <h2 class="mt20">Not one chatbot — a <span class="em">team of agents.</span></h2>
+    <div class="grid2 mt28" style="grid-template-columns:1.12fr .88fr;align-items:stretch">
+      <div class="card">
+        <h3>Orchestrator + specialists</h3>
+        <p style="margin-bottom:16px">The <b>Pet assistant</b> plans each request and delegates to the right specialist — or answers simple questions itself.</p>
+        <div class="agentmap">
+          <div class="orch">🧭 Pet assistant <span>plan · delegate</span></div>
+          <div class="branch">
+            <div class="spec"><b>🍖 Food finder</b><span>search_food</span></div>
+            <div class="spec"><b>🛁 Grooming finder</b><span>search_groomers</span></div>
+            <div class="spec"><b>🩺 Vet finder</b><span>symptom + photo triage · search_vets</span></div>
+            <div class="spec"><b>🖼️ Meme agent</b><span>generate_pet_meme</span></div>
+            <div class="spec ghost"><b>📅 Booking assistant</b><span>runs implicitly · lookup_place · create_booking_draft</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column;text-align:center">
+        <h3>Meme agent — real output</h3>
+        <p>Upload a pet photo → an OpenAI Agents tool edits it into a shareable meme.</p>
+        <div class="memewrap">
+          <img src="assets/meme-hairball.jpg" alt="Generated pet meme — tuxedo cat, 'When every hairball feels like a life crisis'" />
+        </div>
+        <p class="small">Generated from one of our own cats 🐾</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 — Build direction -->
+  <section class="slide">
+    <span class="kicker">Build direction alignment</span>
+    <h2 class="mt20">Deep Domain AI — with an<br/><span class="em">AI-native</span> product around it.</h2>
+    <div class="grid2 mt28">
+      <div class="card" style="border:2px solid var(--wine)">
+        <div class="ic" style="background:var(--pink);color:var(--wine)">03</div>
+        <h3>Deep Domain AI <span class="small">· primary</span></h3>
+        <p>The assistant reflects how local pet care <b>actually</b> works — grounded in real SG vets, products, reviews and local rules, retrieved per pet. Not a simplified, generic model. A pet parent (or vet) can trust the source behind each answer.</p>
+      </div>
+      <div class="card">
+        <div class="ic" style="background:#e3e7f5;color:var(--navy)">02</div>
+        <h3>AI-Native Products &amp; Operations</h3>
+        <p>The product can't exist without the pipeline: pre-embedded local knowledge + geo retrieval make profile-aware, neighbourhood-aware care possible — something ten browser tabs and a generic chatbot can't deliver.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 — Codex -->
+  <section class="slide">
+    <span class="kicker">Use of Codex</span>
+    <h2 class="mt20">Built with Codex, <span class="em">end to end.</span></h2>
+    <p class="lede mt20">Codex was our pair-builder across the whole stack — from architecture to the green test run.</p>
+    <div class="codexbar mt28">
+      <div class="grid2" style="gap:30px">
+        <div class="gap12">
+          <div class="step"><span class="num">01</span><span><b>Develop</b> — architected the data pipeline &amp; schema, and wrote the Next.js 16 / Prisma / pgvector app and RAG layer.</span></div>
+          <div class="step"><span class="num">02</span><span><b>Test</b> — generated and ran the test suite; iterated until green before every commit.</span></div>
+        </div>
+        <div class="gap12">
+          <div class="step"><span class="num">03</span><span><b>Review</b> — reviewed every change, caught the Prisma-drops-pgvector footgun, and kept migrations additive.</span></div>
+          <div class="step"><span class="num">04</span><span><b>Operate</b> — ran ingestion, embeddings &amp; the local→Supabase sync, verifying row counts each step.</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="small mt20">Dev · test · review · ops — the entire project was built and hardened through Codex.</p>
+  </section>
+
+  <!-- 10 — Tech stack -->
+  <section class="slide">
+    <span class="kicker">Under the hood</span>
+    <h2 class="mt20">A modern, server-first stack.</h2>
+    <div class="grid3 mt28">
+      <div class="card"><h3>Frontend</h3><p style="margin-top:14px"><span class="tag">Next.js 16</span><span class="tag">React 19</span><span class="tag">React Compiler</span><span class="tag">Tailwind v4</span><span class="tag">shadcn/ui</span><span class="tag">Leaflet</span></p></div>
+      <div class="card"><h3>AI &amp; data</h3><p style="margin-top:14px"><span class="tag">OpenAI embeddings</span><span class="tag">Vercel AI SDK</span><span class="tag">OpenAI Agents</span><span class="tag">Postgres + pgvector</span><span class="tag">HNSW</span></p></div>
+      <div class="card"><h3>Platform</h3><p style="margin-top:14px"><span class="tag">Prisma 7</span><span class="tag">Supabase auth</span><span class="tag">Google Places</span><span class="tag">Kohepets ingest</span><span class="tag">OneMap geocode</span></p></div>
+    </div>
+    <div class="grid3 mt20">
+      <div class="card"><h3>Retrieval</h3><p>Semantic <code>match_knowledge_chunks</code> + geo <code>nearby_service_places</code> RPCs over one Postgres.</p></div>
+      <div class="card"><h3>Grounding</h3><p>1536-dim vectors kept in lock-step across embedder, column &amp; search layer.</p></div>
+      <div class="card"><h3>Discipline</h3><p>Server components, auth-scoped reads, zod-validated server actions, Biome, typed end-to-end.</p></div>
+    </div>
+  </section>
+
+  <!-- 11 — Impact / close -->
+  <section class="slide">
+    <div class="wine-band">
+      <svg class="ghostpaw" viewBox="0 0 24 24" fill="#fff"><circle cx="5.5" cy="11" r="2.1"/><circle cx="9.5" cy="6.5" r="2.1"/><circle cx="14.5" cy="6.5" r="2.1"/><circle cx="18.5" cy="11" r="2.1"/><path d="M12 12.2c-2.6 0-4.8 1.9-5.4 4.3-.4 1.7 1 3.2 2.7 3.2.9 0 1.7-.4 2.7-.4s1.8.4 2.7.4c1.7 0 3.1-1.5 2.7-3.2-.6-2.4-2.8-4.3-5.4-4.3z"/></svg>
+      <span class="kicker" style="background:rgba(255,255,255,.18);color:#fff">Real-world value</span>
+      <h2 class="mt20">Confident pet care, for every<br/>pet parent in Singapore.</h2>
+      <p class="lede mt20">A nervous first-time owner, a multi-pet household, a rabbit or fish keeper with nowhere to turn — all get trustworthy, local, profile-aware help in one warm place.</p>
+      <div class="row mt28">
+        <span class="pill" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25);color:#fff">🐾 310 services · 333 products · 2,164 vectors</span>
+        <span class="pill" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25);color:#fff">🤖 Deep Domain · AI-native</span>
+        <span class="pill" style="background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.25);color:#fff">⚙️ Built end-to-end with Codex</span>
+      </div>
+      <p class="display mt28" style="font-size:22px;font-weight:700">Little Lovely Pets — lovingly smart pet care. 🐶🐱🐰</p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  const tot=slides.length;
+  let i=0;
+  document.getElementById('tot').textContent=tot;
+  function show(n){
+    i=Math.max(0,Math.min(tot-1,n));
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    document.getElementById('cur').textContent=i+1;
+    document.getElementById('progress').style.width=((i+1)/tot*100)+'%';
+  }
+  function next(){show(i+1)} function prev(){show(i-1)}
+  addEventListener('keydown',e=>{
+    if(['ArrowRight',' ','PageDown'].includes(e.key)){e.preventDefault();next()}
+    else if(['ArrowLeft','PageUp'].includes(e.key)){e.preventDefault();prev()}
+    else if(e.key==='Home'){show(0)} else if(e.key==='End'){show(tot-1)}
+    else if(e.key==='f'||e.key==='F'){if(!document.fullscreenElement)document.documentElement.requestFullscreen();else document.exitFullscreen()}
+  });
+  // click right half = next, left half = prev
+  addEventListener('click',e=>{ if(e.clientX > innerWidth*0.5) next(); else prev(); });
+  show(0);
+</script>
+</body>
+</html>
