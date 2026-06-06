@@ -39,6 +39,13 @@ import {
 } from "@/lib/pet-data/format";
 import { postalToLatLng } from "@/lib/pet-data/search";
 import { getPetCareContext } from "@/lib/pet-queries";
+import {
+  buildObjectKey,
+  getSignedDownloadUrl,
+  isStorageConfigured,
+  parseDataUrl,
+  uploadImage,
+} from "@/lib/storage/s3";
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
@@ -49,6 +56,8 @@ export type AgentRunResult = {
   places?: ServicePlaceCard[];
   bookingDraft?: BookingDraft;
   memeImageDataUrl?: string;
+  /** Signed URL of the meme persisted to S3 (preferred over the data URL). */
+  memeImageUrl?: string;
   toolError?: string;
   toolsUsed?: string[];
   error?: string;
@@ -447,9 +456,30 @@ export async function runMemeAgent(args: {
       result.newItems as { type: string; output?: unknown }[],
     );
 
+    // Persist the meme to private S3 and prefer a signed URL over the heavy
+    // base64 data URL. Falls back to the data URL if storage is unconfigured.
+    let memeImageUrl: string | undefined;
+    if (memeImageDataUrl && isStorageConfigured()) {
+      try {
+        const parsed = parseDataUrl(memeImageDataUrl);
+        if (parsed) {
+          const key = buildObjectKey("memes", parsed.contentType);
+          await uploadImage({
+            key,
+            body: parsed.bytes,
+            contentType: parsed.contentType,
+          });
+          memeImageUrl = await getSignedDownloadUrl(key);
+        }
+      } catch {
+        // keep the memeImageDataUrl fallback
+      }
+    }
+
     return {
       assistantText: assistantText || undefined,
-      memeImageDataUrl,
+      memeImageUrl,
+      memeImageDataUrl: memeImageUrl ? undefined : memeImageDataUrl,
       toolError,
       toolsUsed: extractToolsFromAgentItems(
         result.newItems as { type: string; name?: string; rawItem?: unknown }[],
@@ -575,13 +605,14 @@ export function agentResultToMessageContent(
   }
 
   if (agentId === "meme") {
+    const memeImage = result.memeImageUrl ?? result.memeImageDataUrl;
     return {
       content:
         result.assistantText ||
-        (result.memeImageDataUrl
+        (memeImage
           ? "Here's your meme! 🐾"
           : result.toolError || "No image returned."),
-      data: { imageUrl: result.memeImageDataUrl },
+      data: { imageUrl: memeImage },
     };
   }
 

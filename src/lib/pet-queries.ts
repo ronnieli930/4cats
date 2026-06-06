@@ -3,7 +3,19 @@ import "server-only";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { prisma } from "@/lib/db";
+import { resolveStoredImageUrl } from "@/lib/storage/s3";
 import { createClient } from "@/lib/supabase/server";
+
+/**
+ * Replace a stored photo reference with a usable URL: a private S3 object key
+ * becomes a short-lived signed URL, an http(s) URL passes through, null stays
+ * null. Applied to every pet leaving this module so the UI can render directly.
+ */
+async function withResolvedPhoto<T extends { photoUrl: string | null }>(
+  item: T,
+): Promise<T> {
+  return { ...item, photoUrl: await resolveStoredImageUrl(item.photoUrl) };
+}
 
 /** Cookie holding the user's currently-selected pet id (multi-pet switching). */
 export const ACTIVE_PET_COOKIE = "llp_active_pet";
@@ -206,12 +218,12 @@ export const getPetCareContext = cache(async (): Promise<PetCareContext> => {
     },
   });
 
-  return {
-    userDisplayName,
-    settings,
-    pet: row ? mapPet(row) : null,
-    pets: summaries,
-  };
+  const [pet, pets] = await Promise.all([
+    row ? withResolvedPhoto(mapPet(row)) : Promise.resolve(null),
+    Promise.all(summaries.map(withResolvedPhoto)),
+  ]);
+
+  return { userDisplayName, settings, pet, pets };
 });
 
 /** Owner account settings for the Settings page (auth-scoped). */
@@ -247,5 +259,5 @@ export const getUserPets = cache(async (): Promise<PetDTO[]> => {
     orderBy: { createdAt: "asc" },
   });
 
-  return rows.map((row) => mapPet(row));
+  return Promise.all(rows.map((row) => withResolvedPhoto(mapPet(row))));
 });

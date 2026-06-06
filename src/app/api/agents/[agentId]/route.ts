@@ -34,6 +34,13 @@ import {
 } from "@/lib/pet-data/format";
 import { postalToLatLng } from "@/lib/pet-data/search";
 import { getPetCareContext } from "@/lib/pet-queries";
+import {
+  buildObjectKey,
+  getSignedDownloadUrl,
+  isStorageConfigured,
+  parseDataUrl,
+  uploadImage,
+} from "@/lib/storage/s3";
 
 const ALLOWED_IMAGE_TYPES = new Set(["image/png", "image/jpeg", "image/webp"]);
 const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
@@ -189,9 +196,34 @@ export async function POST(
       result.newItems as { type: string; output?: unknown }[],
     );
 
+    // Persist the generated meme to private S3 and return a signed URL instead
+    // of the heavy base64 data URL. Falls back to the data URL if storage is
+    // unconfigured or the upload fails, so the demo still works either way.
+    let memeImageUrl: string | undefined;
+    if (memeImageDataUrl && isStorageConfigured()) {
+      try {
+        const parsed = parseDataUrl(memeImageDataUrl);
+        if (parsed) {
+          const key = buildObjectKey(
+            `memes/${sessionUser.id}`,
+            parsed.contentType,
+          );
+          await uploadImage({
+            key,
+            body: parsed.bytes,
+            contentType: parsed.contentType,
+          });
+          memeImageUrl = await getSignedDownloadUrl(key);
+        }
+      } catch {
+        // keep memeImageDataUrl fallback below
+      }
+    }
+
     return NextResponse.json({
       assistantText: assistantText || undefined,
-      memeImageDataUrl,
+      memeImageUrl,
+      memeImageDataUrl: memeImageUrl ? undefined : memeImageDataUrl,
       toolError,
     });
   } catch (e) {

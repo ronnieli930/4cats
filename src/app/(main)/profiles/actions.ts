@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { buildObjectKey, uploadImage } from "@/lib/storage/s3";
 import { createClient } from "@/lib/supabase/server";
 
 const updateSchema = z.object({
@@ -169,7 +170,6 @@ export async function createPet(
   return { ok: true };
 }
 
-const PET_PHOTO_BUCKET = "pet-photos";
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 const ALLOWED_PHOTO_TYPES = new Set([
   "image/jpeg",
@@ -213,23 +213,20 @@ export async function uploadPetPhoto(
     return { error: "No pet profile found." };
   }
 
-  const ext = file.type.split("/")[1]?.replace("jpeg", "jpg") ?? "jpg";
-  const path = `${user.id}/${pet.id}-${Date.now()}.${ext}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from(PET_PHOTO_BUCKET)
-    .upload(path, file, { contentType: file.type, upsert: true });
-  if (uploadError) {
-    return { error: `Upload failed: ${uploadError.message}` };
+  // Store on private S3 (Supabase Storage S3 protocol). We persist the object
+  // KEY; pet-queries resolves it to a short-lived signed URL on read.
+  const key = buildObjectKey(`pets/${user.id}`, file.type);
+  try {
+    const body = Buffer.from(await file.arrayBuffer());
+    await uploadImage({ key, body, contentType: file.type });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "unknown error";
+    return { error: `Upload failed: ${message}` };
   }
-
-  const {
-    data: { publicUrl },
-  } = supabase.storage.from(PET_PHOTO_BUCKET).getPublicUrl(path);
 
   await prisma.pet.update({
     where: { id: pet.id },
-    data: { photoUrl: publicUrl },
+    data: { photoUrl: key },
   });
 
   revalidateAll();
