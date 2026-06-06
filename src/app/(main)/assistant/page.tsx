@@ -21,13 +21,6 @@ import { Button } from "@/components/ui/button";
 import { ASSISTANT_AGENTS, type AssistantAgentId } from "@/lib/agents/registry";
 import { mochiPortrait } from "@/lib/pet-data";
 
-const availableModels = [
-  { id: "openai/gpt-4o-mini", label: "GPT-4o Mini" },
-  { id: "openai/gpt-4o", label: "GPT-4o" },
-  { id: "anthropic/claude-sonnet-4", label: "Claude Sonnet 4" },
-  { id: "google/gemini-2.5-flash", label: "Gemini 2.5 Flash" },
-];
-
 const WELCOME_TEXT =
   "Hi there! How is Mochi doing today? I'm ready to help with any grooming, health, or lifestyle questions you have for your Shih Tzu.";
 
@@ -43,7 +36,6 @@ type MemeMessage = {
 
 export default function AssistantPage() {
   const [agentId, setAgentId] = useState<AssistantAgentId>("general");
-  const [modelId, setModelId] = useState("openai/gpt-4o-mini");
   const [input, setInput] = useState("");
   const [memeMessages, setMemeMessages] = useState<MemeMessage[]>([]);
   const [memeInput, setMemeInput] = useState("");
@@ -53,12 +45,8 @@ export default function AssistantPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const transport = useMemo(
-    () =>
-      new DefaultChatTransport({
-        api: "/api/chat",
-        body: { modelId },
-      }),
-    [modelId],
+    () => new DefaultChatTransport({ api: "/api/chat" }),
+    [],
   );
 
   const { messages, sendMessage, status, error } = useChat({
@@ -173,9 +161,6 @@ export default function AssistantPage() {
         <section className="relative flex h-screen flex-col overflow-hidden bg-[radial-gradient(#dac0c3_1px,transparent_1px)] [background-size:34px_34px]">
           <div className="mx-auto mt-4 flex w-full max-w-4xl flex-col items-center gap-3 px-4 sm:flex-row sm:justify-center">
             <AgentSelector agentId={agentId} onAgentChange={setAgentId} />
-            {agentId === "general" && (
-              <ModelSelector modelId={modelId} onModelChange={setModelId} />
-            )}
           </div>
 
           <div
@@ -315,51 +300,6 @@ function AgentSelector({
               <span className="mt-0.5 block text-xs text-muted-foreground">
                 {a.description}
               </span>
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ModelSelector({
-  modelId,
-  onModelChange,
-}: {
-  modelId: string;
-  onModelChange: (id: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const current = availableModels.find((m) => m.id === modelId);
-
-  return (
-    <div className="relative mx-auto mt-4 w-fit">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 rounded-full border border-[#dac0c3]/70 bg-white/80 px-4 py-1.5 text-sm text-[#554244] shadow-sm backdrop-blur transition-colors hover:bg-white"
-      >
-        {current?.label ?? modelId}
-        <ChevronDown className="size-3.5" />
-      </button>
-      {open && (
-        <div className="absolute left-1/2 top-full z-20 mt-1 w-48 -translate-x-1/2 rounded-xl border border-[#dac0c3]/60 bg-white p-1 shadow-lg">
-          {availableModels.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => {
-                onModelChange(m.id);
-                setOpen(false);
-              }}
-              className={`w-full rounded-lg px-3 py-2 text-left text-sm transition-colors ${
-                m.id === modelId
-                  ? "bg-[#ff8da1]/20 font-medium text-[#782338]"
-                  : "text-[#554244] hover:bg-[#f3f4f5]"
-              }`}
-            >
-              {m.label}
             </button>
           ))}
         </div>
