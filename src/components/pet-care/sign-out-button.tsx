@@ -36,7 +36,7 @@ export function SignOutButton({
       onClick={handleSignOut}
       type="button"
     >
-      <LogOut className="size-5 shrink-0" />
+      <LogOut className="size-4 shrink-0" />
       <span>{pending ? "Signing out…" : "Sign out"}</span>
     </button>
   );
