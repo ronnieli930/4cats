@@ -10,6 +10,7 @@ import {
   Utensils,
 } from "lucide-react";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import {
   AnimatedList,
   FadeContent,
@@ -403,21 +404,49 @@ function NearbyCard({
   );
 }
 
-export default async function Home() {
+function DashboardSkeleton() {
+  return (
+    <main className="min-h-0 flex-1 bg-background px-5 pt-8 pb-12 md:px-12">
+      <section className="mx-auto max-w-6xl animate-pulse">
+        <div className="mb-10">
+          <div className="h-12 w-72 rounded-lg bg-muted" />
+          <div className="mt-3 h-5 w-56 rounded bg-muted" />
+        </div>
+        <div className="grid gap-6 lg:grid-cols-[0.95fr_1.25fr]">
+          <div className="h-[560px] rounded-2xl border border-border bg-card" />
+          <div className="grid gap-6">
+            <div className="h-48 rounded-2xl border border-border bg-card" />
+            <div className="h-80 rounded-2xl border border-border bg-card" />
+          </div>
+          <div className="h-60 rounded-2xl border border-border bg-card" />
+          <div className="h-80 rounded-2xl border border-border bg-card" />
+        </div>
+      </section>
+    </main>
+  );
+}
+
+async function DashboardContent() {
   const { userDisplayName, pet } = await getPetCareContext();
-  if (!pet) {
-    redirect("/onboarding");
-  }
+  if (!pet) redirect("/onboarding");
 
   const { places: nearbyVets } = await getNearbyTop(pet, "vet", 3);
 
   return (
+    <Dashboard
+      userDisplayName={userDisplayName}
+      pet={pet}
+      nearbyVets={nearbyVets}
+    />
+  );
+}
+
+export default function Home() {
+  return (
     <PetCareShell active="dashboard">
-      <Dashboard
-        userDisplayName={userDisplayName}
-        pet={pet}
-        nearbyVets={nearbyVets}
-      />
+      <Suspense fallback={<DashboardSkeleton />}>
+        <DashboardContent />
+      </Suspense>
     </PetCareShell>
   );
 }
