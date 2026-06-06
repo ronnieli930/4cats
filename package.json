@@ -8,7 +8,8 @@
     "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start",
     "probe:products": "node scripts/data-pipeline/probe-product-providers.mjs",
-    "db:apply:pipeline": "node scripts/data-pipeline/run-sql-file.mjs prisma/migrations/1_pet_care_pipeline/migration.sql",
+    "db:apply:pipeline": "node scripts/data-pipeline/apply-sql.mjs scripts/data-pipeline/sql/pipeline-schema.sql",
+    "db:check": "node scripts/data-pipeline/db-check.mjs",
     "lint": "biome check",
     "format": "biome format --write"
   },
