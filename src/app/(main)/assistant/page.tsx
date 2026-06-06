@@ -4,17 +4,14 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AgentSelector } from "@/components/assistant/agent-selector";
-import { ChatBubble, LoadingBubble } from "@/components/assistant/chat-bubble";
 import { ChatInput, MemeChatInput } from "@/components/assistant/chat-input";
 import { ContextSidebar } from "@/components/assistant/context-sidebar";
-import { PetCareShell } from "@/components/pet-care/shell";
+import { GeneralChat } from "@/components/assistant/general-chat";
+import { MemeChat, type MemeMessage } from "@/components/assistant/meme-chat";
 import { usePetCare } from "@/components/pet-care/pet-care-provider";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { ASSISTANT_AGENTS, type AssistantAgentId } from "@/lib/agents/registry";
-import { petPlaceholderImage } from "@/lib/pet-data";
+import { PetCareShell } from "@/components/pet-care/shell";
+import type { AssistantAgentId } from "@/lib/agents/registry";
 import type { PetDTO } from "@/lib/pet-queries";
-import { MapIcon, ShoppingBag } from "lucide-react";
 
 function buildAssistantWelcome(pet: PetDTO | null): string {
   if (!pet) {
@@ -30,32 +27,8 @@ function buildAssistantWelcome(pet: PetDTO | null): string {
   return `Hi there! How is ${pet.name} doing today? I'm ready to help with any grooming, health, or lifestyle questions you have for your ${kind}.`;
 }
 
-function buildContextPetSubtitle(pet: PetDTO): string {
-  const breed = pet.breed?.trim();
-  const species =
-    pet.species.toLowerCase() === "dog"
-      ? "Dog"
-      : pet.species.toLowerCase() === "cat"
-        ? "Cat"
-        : pet.species;
-  const age =
-    pet.ageYears != null ? `${Number(pet.ageYears)} yrs` : "Age not set";
-  const med =
-    pet.medicalConditions.length > 0
-      ? pet.medicalConditions.slice(0, 2).join(", ")
-      : "No conditions on file";
-  return `${breed || species} • ${age} • ${med}`;
-}
-
 const MEME_WELCOME =
   "I'm the Meme agent. Upload a photo of your pet, add an optional caption or vibe, and I'll generate a meme image using OpenAI image editing.";
-
-type MemeMessage = {
-  id: string;
-  role: "user" | "assistant";
-  text: string;
-  imageUrl?: string;
-};
 
 export default function AssistantPage() {
   const { pet } = usePetCare();
@@ -92,7 +65,6 @@ export default function AssistantPage() {
   });
 
   const busy = status === "streaming" || status === "submitted";
-  const chatPlaceholderPet = pet?.name ?? "your pet";
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const lastScrollKey =
@@ -150,7 +122,8 @@ export default function AssistantPage() {
         toolError?: string;
         error?: string;
       };
-      if (!res.ok) throw new Error(data.error || `Request failed (${res.status})`);
+      if (!res.ok)
+        throw new Error(data.error || `Request failed (${res.status})`);
 
       setMemeMessages((prev) => [
         ...prev,
@@ -182,8 +155,8 @@ export default function AssistantPage() {
 
   return (
     <PetCareShell active="assistant">
-      <main className="grid min-h-screen bg-background md:ml-64 lg:grid-cols-[1fr_320px]">
-        <section className="relative flex h-screen flex-col overflow-hidden bg-[radial-gradient(var(--color-border)_1px,transparent_1px)] bg-size-[34px_34px]">
+      <main className="grid min-h-0 flex-1 bg-background lg:grid-cols-[1fr_320px]">
+        <section className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-[radial-gradient(var(--color-border)_1px,transparent_1px)] bg-size-[34px_34px]">
           <div className="mx-auto mt-4 flex w-full max-w-4xl flex-col items-center gap-3 px-4 sm:flex-row sm:justify-center">
             <AgentSelector agentId={agentId} onAgentChange={setAgentId} />
           </div>
@@ -200,16 +173,13 @@ export default function AssistantPage() {
               </div>
 
               {agentId === "general" ? (
-                <GeneralChat
-                  messages={messages}
-                  busy={busy}
-                  error={error}
-                />
+                <GeneralChat messages={messages} busy={busy} error={error} />
               ) : (
                 <MemeChat
                   messages={memeMessages}
                   busy={memeBusy}
                   error={memeError}
+                  welcomeText={MEME_WELCOME}
                 />
               )}
             </div>
@@ -219,7 +189,7 @@ export default function AssistantPage() {
             <ChatInput
               input={input}
               busy={busy}
-              petName={chatPlaceholderPet}
+              petName={pet?.name}
               onInputChange={setInput}
               onSubmit={handleSubmit}
             />
@@ -239,79 +209,5 @@ export default function AssistantPage() {
         <ContextSidebar activeAgentId={agentId} />
       </main>
     </PetCareShell>
-  );
-}
-
-function GeneralChat({
-  messages,
-  busy,
-  error,
-  petName,
-  onInputChange,
-  onSubmit,
-}: {
-  messages: { id: string; role: string; content: string; parts?: { type: string; text: string }[] }[];
-  busy: boolean;
-  error: Error | undefined;
-  petName: string;
-  onInputChange: (value: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
-}) {
-  const placeholder =
-    petName === "your pet"
-      ? "Ask about your pet's health, diet, or local services..."
-      : `Ask about ${petName}'s health, diet, or local services...`;
-
-  return (
-    <div className="flex flex-col gap-6">
-      {messages.map((msg) => (
-        <ChatBubble
-          key={msg.id}
-          speaker={msg.role}
-          content={
-            msg.parts
-              ?.filter((p) => p.type === "text")
-              .map((p) => p.text)
-              .join("") || msg.content
-          }
-        />
-      ))}
-      {busy && messages.at(-1)?.role !== "assistant" && <LoadingBubble />}
-      {error && (
-        <div className="mx-auto max-w-2xl rounded-xl border border-destructive/30 bg-destructive/10 px-5 py-3 text-sm text-destructive">
-          {error.message || "Something went wrong. Please try again."}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function MemeChat({
-  messages,
-  busy,
-  error,
-}: {
-  messages: MemeMessage[];
-  busy: boolean;
-  error: string | null;
-}) {
-  return (
-    <div className="flex flex-col gap-6">
-      <ChatBubble speaker="assistant" content={MEME_WELCOME} />
-      {messages.map((msg) => (
-        <ChatBubble
-          key={msg.id}
-          speaker={msg.role}
-          content={msg.text}
-          imageUrl={msg.imageUrl}
-        />
-      ))}
-      {busy && <LoadingBubble />}
-      {error && !busy && (
-        <div className="mx-auto max-w-2xl rounded-xl border border-amber-200 bg-amber-50 px-5 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200">
-          {error}
-        </div>
-      )}
-    </div>
   );
 }

@@ -4,14 +4,20 @@ import { Button } from "@/components/ui/button";
 export function ChatInput({
   input,
   busy,
+  petName,
   onInputChange,
   onSubmit,
 }: {
   input: string;
   busy: boolean;
+  petName?: string;
   onInputChange: (value: string) => void;
   onSubmit: (e: React.FormEvent) => void;
 }) {
+  const placeholder = petName
+    ? `Ask about ${petName}'s health, diet, or local services...`
+    : "Ask about your pet's health, diet, or local services...";
+
   return (
     <div className="border-t border-border bg-linear-to-t from-background via-background p-5 md:px-10">
       <form
@@ -22,7 +28,7 @@ export function ChatInput({
           type="text"
           value={input}
           onChange={(e) => onInputChange(e.target.value)}
-          placeholder="Ask about Mochi's health, diet, or local services..."
+          placeholder={placeholder}
           className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground focus:outline-none"
           disabled={busy}
         />
