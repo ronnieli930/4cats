@@ -1,5 +1,6 @@
 import { Sparkles, UserRound } from "lucide-react";
 import Image from "next/image";
+import { Markdown } from "./markdown";
 
 function AssistantAvatar() {
   return (
@@ -34,7 +35,7 @@ export function ChatBubble({
       <div className="flex max-w-[min(100%,42rem)] items-start gap-3">
         <AssistantAvatar />
         <div className="min-w-0 space-y-4 rounded-2xl rounded-tl-md border border-white/60 bg-white/85 p-4 text-base leading-relaxed text-foreground shadow-[0_4px_20px_rgba(29,53,87,0.05)] backdrop-blur-md dark:border-white/10 dark:bg-card/90">
-          <p className="whitespace-pre-wrap">{content}</p>
+          {content ? <Markdown>{content}</Markdown> : null}
           {imageUrl ? (
             <Image
               alt="Generated meme"
@@ -64,7 +65,7 @@ export function ChatBubble({
             className="max-h-64 w-full max-w-xs rounded-lg border border-white/40 object-contain"
           />
         ) : null}
-        <p className="whitespace-pre-wrap">{content}</p>
+        {content ? <Markdown>{content}</Markdown> : null}
       </div>
     </div>
   );

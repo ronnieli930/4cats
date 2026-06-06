@@ -4,8 +4,13 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AgentSelector } from "@/components/assistant/agent-selector";
-import { ChatInput, MemeChatInput } from "@/components/assistant/chat-input";
+import {
+  ChatInput,
+  FoodChatInput,
+  MemeChatInput,
+} from "@/components/assistant/chat-input";
 import { ContextSidebar } from "@/components/assistant/context-sidebar";
+import { FoodChat, type FoodMessage } from "@/components/assistant/food-chat";
 import { GeneralChat } from "@/components/assistant/general-chat";
 import { MemeChat, type MemeMessage } from "@/components/assistant/meme-chat";
 import { usePetCare } from "@/components/pet-care/pet-care-provider";
@@ -30,6 +35,13 @@ function buildAssistantWelcome(pet: PetDTO | null): string {
 const MEME_WELCOME =
   "I'm the Meme agent. Upload a photo of your pet, add an optional caption or vibe, and I'll generate a meme image using OpenAI image editing.";
 
+function buildFoodWelcome(pet: PetDTO | null): string {
+  if (!pet) {
+    return "I'm the Food Finder. Add your pet's profile (or upload a photo) and I'll suggest real foods with prices and where to buy them in Singapore.";
+  }
+  return `I'm the Food Finder. Tell me what you're after for ${pet.name}, or just hit send and I'll suggest foods that fit their profile — with prices and where to buy. You can also add a photo for a body-condition estimate.`;
+}
+
 export default function AssistantPage() {
   const { pet } = usePetCare();
   const [agentId, setAgentId] = useState<AssistantAgentId>("general");
@@ -41,12 +53,20 @@ export default function AssistantPage() {
   const [memeError, setMemeError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const [foodMessages, setFoodMessages] = useState<FoodMessage[]>([]);
+  const [foodInput, setFoodInput] = useState("");
+  const [foodFile, setFoodFile] = useState<File | null>(null);
+  const [foodBusy, setFoodBusy] = useState(false);
+  const [foodError, setFoodError] = useState<string | null>(null);
+  const foodFileInputRef = useRef<HTMLInputElement>(null);
+
   const transport = useMemo(
     () => new DefaultChatTransport({ api: "/api/chat" }),
     [],
   );
 
   const welcomeText = useMemo(() => buildAssistantWelcome(pet), [pet]);
+  const foodWelcomeText = useMemo(() => buildFoodWelcome(pet), [pet]);
   const initialMessages = useMemo(
     () => [
       {
@@ -70,7 +90,9 @@ export default function AssistantPage() {
   const lastScrollKey =
     agentId === "general"
       ? messages.at(-1)?.id
-      : (memeMessages.at(-1)?.id ?? memeBusy);
+      : agentId === "food"
+        ? (foodMessages.at(-1)?.id ?? foodBusy)
+        : (memeMessages.at(-1)?.id ?? memeBusy);
   // biome-ignore lint/correctness/useExhaustiveDependencies: scroll when messages change
   useEffect(() => {
     scrollRef.current?.scrollTo({
@@ -97,6 +119,7 @@ export default function AssistantPage() {
     setMemeError(null);
     setMemeBusy(true);
 
+    const file = memeFile;
     const text =
       memeInput.trim() || "Create a funny, shareable meme featuring my pet.";
     const previewDataUrl = await new Promise<string>((resolve, reject) => {
@@ -104,16 +127,19 @@ export default function AssistantPage() {
       reader.onload = () => resolve(String(reader.result));
       reader.onerror = () =>
         reject(reader.error ?? new Error("Failed to read image"));
-      reader.readAsDataURL(memeFile);
+      reader.readAsDataURL(file);
     });
     setMemeMessages((prev) => [
       ...prev,
       { id: `u-${Date.now()}`, role: "user", text, imageUrl: previewDataUrl },
     ]);
+    setMemeInput("");
+    setMemeFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
 
     try {
       const fd = new FormData();
-      fd.set("image", memeFile);
+      fd.set("image", file);
       fd.set("message", text);
       const res = await fetch("/api/agents/meme", { method: "POST", body: fd });
       const data = (await res.json()) as {
@@ -138,9 +164,6 @@ export default function AssistantPage() {
           imageUrl: data.memeImageDataUrl,
         },
       ]);
-      setMemeInput("");
-      setMemeFile(null);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Something went wrong.";
       setMemeError(msg);
@@ -150,6 +173,74 @@ export default function AssistantPage() {
       ]);
     } finally {
       setMemeBusy(false);
+    }
+  }
+
+  async function handleFoodSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (foodBusy) return;
+    setFoodError(null);
+    setFoodBusy(true);
+
+    const file = foodFile;
+    const text =
+      foodInput.trim() ||
+      "Suggest the best food for my pet based on their profile, with prices and where to buy.";
+
+    let previewDataUrl: string | undefined;
+    if (file) {
+      previewDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () =>
+          reject(reader.error ?? new Error("Failed to read image"));
+        reader.readAsDataURL(file);
+      });
+    }
+
+    setFoodMessages((prev) => [
+      ...prev,
+      { id: `u-${Date.now()}`, role: "user", text, imageUrl: previewDataUrl },
+    ]);
+    setFoodInput("");
+    setFoodFile(null);
+    if (foodFileInputRef.current) foodFileInputRef.current.value = "";
+
+    try {
+      const fd = new FormData();
+      fd.set("message", text);
+      if (file) fd.set("image", file);
+      const res = await fetch("/api/agents/food", { method: "POST", body: fd });
+      const data = (await res.json()) as {
+        assistantText?: string;
+        products?: FoodMessage["products"];
+        toolError?: string;
+        error?: string;
+      };
+      if (!res.ok)
+        throw new Error(data.error || `Request failed (${res.status})`);
+
+      setFoodMessages((prev) => [
+        ...prev,
+        {
+          id: `a-${Date.now()}`,
+          role: "assistant",
+          text:
+            data.assistantText ||
+            data.toolError ||
+            "I couldn't find a good match just now — try adding a bit more detail.",
+          products: data.products,
+        },
+      ]);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Something went wrong.";
+      setFoodError(msg);
+      setFoodMessages((prev) => [
+        ...prev,
+        { id: `a-${Date.now()}`, role: "assistant", text: `Sorry — ${msg}` },
+      ]);
+    } finally {
+      setFoodBusy(false);
     }
   }
 
@@ -174,6 +265,13 @@ export default function AssistantPage() {
 
               {agentId === "general" ? (
                 <GeneralChat messages={messages} busy={busy} error={error} />
+              ) : agentId === "food" ? (
+                <FoodChat
+                  messages={foodMessages}
+                  busy={foodBusy}
+                  error={foodError}
+                  welcomeText={foodWelcomeText}
+                />
               ) : (
                 <MemeChat
                   messages={memeMessages}
@@ -193,6 +291,17 @@ export default function AssistantPage() {
               onInputChange={setInput}
               onSubmit={handleSubmit}
             />
+          ) : agentId === "food" ? (
+            <FoodChatInput
+              input={foodInput}
+              busy={foodBusy}
+              file={foodFile}
+              fileInputRef={foodFileInputRef}
+              petName={pet?.name}
+              onInputChange={setFoodInput}
+              onFileChange={setFoodFile}
+              onSubmit={handleFoodSubmit}
+            />
           ) : (
             <MemeChatInput
               input={memeInput}
@@ -208,6 +317,6 @@ export default function AssistantPage() {
 
         <ContextSidebar activeAgentId={agentId} />
       </main>
-    </PetCareShell >
+    </PetCareShell>
   );
 }

@@ -10,6 +10,7 @@
     "probe:products": "node scripts/data-pipeline/probe-product-providers.mjs",
     "db:apply:pipeline": "node scripts/data-pipeline/run-sql-file.mjs prisma/migrations/1_pet_care_pipeline/migration.sql",
     "db:apply:pet-photos": "node scripts/data-pipeline/run-sql-file.mjs scripts/data-pipeline/setup-pet-photos-bucket.sql",
+    "test": "node --import tsx --test \"src/**/*.test.ts\"",
     "lint": "biome check",
     "format": "biome format --write"
   },
@@ -73,8 +74,10 @@
     "react-day-picker": "^9.13.0",
     "react-dom": "19.2.3",
     "react-hook-form": "^7.70.0",
+    "react-markdown": "^10.1.0",
     "react-resizable-panels": "^4.2.1",
     "recharts": "2.15.4",
+    "remark-gfm": "^4.0.1",
     "server-only": "^0.0.1",
     "sharp": "^0.34.5",
     "sonner": "^2.0.7",

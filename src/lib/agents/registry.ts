@@ -10,6 +10,13 @@ export const ASSISTANT_AGENTS = [
     kind: "chat" as const,
   },
   {
+    id: "food",
+    label: "Food finder",
+    description:
+      "Grounded food picks for your pet — with prices and where to buy.",
+    kind: "food" as const,
+  },
+  {
     id: "meme",
     label: "Meme agent",
     description: "Upload a pet photo and get a generated meme image.",
